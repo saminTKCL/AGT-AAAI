@@ -1,0 +1,52 @@
+[
+  {
+    "dataset": "Texas",
+    "global_homophily": 0.5427058339118958,
+    "h_mean": 0.5427058339118958,
+    "h_std": 0.26619863510131836,
+    "frac_strongly_hetero": 0.03825136612021858,
+    "frac_ambiguous": 0.6830601092896175,
+    "frac_homo": 0.2786885245901639,
+    "knn_feature_label_align": 0.625683069229126
+  },
+  {
+    "dataset": "Wisconsin",
+    "global_homophily": 0.5733497142791748,
+    "h_mean": 0.5733497142791748,
+    "h_std": 0.28518685698509216,
+    "frac_strongly_hetero": 0.06374501992031872,
+    "frac_ambiguous": 0.5816733067729084,
+    "frac_homo": 0.3545816733067729,
+    "knn_feature_label_align": 0.6944223046302795
+  },
+  {
+    "dataset": "Chameleon",
+    "global_homophily": 0.7560381889343262,
+    "h_mean": 0.7560381889343262,
+    "h_std": 0.35478290915489197,
+    "frac_strongly_hetero": 0.12384716732542819,
+    "frac_ambiguous": 0.18840579710144928,
+    "frac_homo": 0.6877470355731226,
+    "knn_feature_label_align": 0.27852436900138855
+  },
+  {
+    "dataset": "Squirrel",
+    "global_homophily": 0.701598584651947,
+    "h_mean": 0.701598584651947,
+    "h_std": 0.37859591841697693,
+    "frac_strongly_hetero": 0.16842914824072294,
+    "frac_ambiguous": 0.21592001538165737,
+    "frac_homo": 0.6156508363776196,
+    "knn_feature_label_align": 0.23307058215141296
+  },
+  {
+    "dataset": "Cora",
+    "global_homophily": 0.8707764744758606,
+    "h_mean": 0.8707764744758606,
+    "h_std": 0.21074619889259338,
+    "frac_strongly_hetero": 0.004062038404726735,
+    "frac_ambiguous": 0.13737075332348597,
+    "frac_homo": 0.8585672082717873,
+    "knn_feature_label_align": 0.5492245554924011
+  }
+]

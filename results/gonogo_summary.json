@@ -1,0 +1,26 @@
+{
+  "test_mean":{
+    "('Actor', 'AGT')":32.1929842234,
+    "('Actor', 'AGT-Implicit')":33.2675457001,
+    "('Actor', 'GRAIN-TD3')":32.1929842234,
+    "('Texas', 'AGT')":65.7657663027,
+    "('Texas', 'AGT-Implicit')":68.4684713682,
+    "('Texas', 'GRAIN-TD3')":65.7657663027
+  },
+  "test_std":{
+    "('Actor', 'AGT')":0.0036233992,
+    "('Actor', 'AGT-Implicit')":0.0063217196,
+    "('Actor', 'GRAIN-TD3')":0.0108967118,
+    "('Texas', 'AGT')":0.0780202946,
+    "('Texas', 'AGT-Implicit')":0.0412844736,
+    "('Texas', 'GRAIN-TD3')":0.0780202946
+  },
+  "time_mean":{
+    "('Actor', 'AGT')":229.4015547787,
+    "('Actor', 'AGT-Implicit')":83.3554434417,
+    "('Actor', 'GRAIN-TD3')":159.3997259917,
+    "('Texas', 'AGT')":5.4906684083,
+    "('Texas', 'AGT-Implicit')":2.0827024597,
+    "('Texas', 'GRAIN-TD3')":4.3987987913
+  }
+}

@@ -1,0 +1,17 @@
+[
+  {
+    "dataset": "Texas",
+    "seed": 0,
+    "kstar_td3_corr": -0.11408874834823837
+  },
+  {
+    "dataset": "Chameleon",
+    "seed": 0,
+    "kstar_td3_corr": -0.14892390698595018
+  },
+  {
+    "dataset": "Cora",
+    "seed": 0,
+    "kstar_td3_corr": 0.02564449068169995
+  }
+]

@@ -1,0 +1,26 @@
+{
+  "Texas": {
+    "geomgcn_mean": 0.6648648738861084,
+    "official_mean": 0.5168316841125489,
+    "paper_grain": 87.69,
+    "split_gap": -0.1480331897735595
+  },
+  "Actor": {
+    "geomgcn_mean": 0.32842106819152833,
+    "official_mean": 0.3341709733009338,
+    "paper_grain": 38.89,
+    "split_gap": 0.005749905109405484
+  },
+  "Cora": {
+    "geomgcn_mean": 0.8929577231407165,
+    "official_mean": 0.8605873107910156,
+    "paper_grain": 88.52,
+    "split_gap": -0.03237041234970095
+  },
+  "Chameleon": {
+    "geomgcn_mean": 0.6048245787620544,
+    "official_mean": 0.6053064942359925,
+    "paper_grain": 56.43,
+    "split_gap": 0.0004819154739380549
+  }
+}

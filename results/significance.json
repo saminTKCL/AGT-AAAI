@@ -1,0 +1,74 @@
+[
+  {
+    "dataset": "Actor",
+    "td3_mean": 0.3331579089164734,
+    "AGT_mean": 0.33361843824386594,
+    "AGT_wilcoxon_p": 0.943359375,
+    "AGT-Implicit_mean": 0.33565790951251984,
+    "AGT-Implicit_wilcoxon_p": 0.431640625
+  },
+  {
+    "dataset": "Chameleon",
+    "td3_mean": 0.6173245728015899,
+    "AGT_mean": 0.627850878238678,
+    "AGT_wilcoxon_p": 0.0078125,
+    "AGT-Implicit_mean": 0.573245620727539,
+    "AGT-Implicit_wilcoxon_p": 0.001953125
+  },
+  {
+    "dataset": "Citeseer",
+    "td3_mean": 0.7756303608417511,
+    "AGT_mean": 0.7872761964797974,
+    "AGT_wilcoxon_p": 0.001953125,
+    "AGT-Implicit_mean": 0.7918019533157349,
+    "AGT-Implicit_wilcoxon_p": 0.00390625
+  },
+  {
+    "dataset": "Cora",
+    "td3_mean": 0.8895371973514556,
+    "AGT_mean": 0.9018108487129212,
+    "AGT_wilcoxon_p": 0.00390625,
+    "AGT-Implicit_mean": 0.8853118419647217,
+    "AGT-Implicit_wilcoxon_p": 0.314453125
+  },
+  {
+    "dataset": "Cornell",
+    "td3_mean": 0.6108108162879944,
+    "AGT_mean": 0.5675675809383393,
+    "AGT_wilcoxon_p": 0.037109375,
+    "AGT-Implicit_mean": 0.6567567706108093,
+    "AGT-Implicit_wilcoxon_p": 0.0859375
+  },
+  {
+    "dataset": "Pubmed",
+    "td3_mean": 0.8831135749816894,
+    "AGT_mean": 0.8943458259105682,
+    "AGT_wilcoxon_p": 0.001953125,
+    "AGT-Implicit_mean": 0.895613569021225,
+    "AGT-Implicit_wilcoxon_p": 0.001953125
+  },
+  {
+    "dataset": "Squirrel",
+    "td3_mean": 0.46003841161727904,
+    "AGT_mean": 0.4576368749141693,
+    "AGT_wilcoxon_p": 0.103515625,
+    "AGT-Implicit_mean": 0.4250720351934433,
+    "AGT-Implicit_wilcoxon_p": 0.001953125
+  },
+  {
+    "dataset": "Texas",
+    "td3_mean": 0.6756756901741028,
+    "AGT_mean": 0.6621621787548065,
+    "AGT_wilcoxon_p": 0.3828125,
+    "AGT-Implicit_mean": 0.708108127117157,
+    "AGT-Implicit_wilcoxon_p": 0.2421875
+  },
+  {
+    "dataset": "Wisconsin",
+    "td3_mean": 0.6980392336845398,
+    "AGT_mean": 0.6745098233222961,
+    "AGT_wilcoxon_p": 0.03125,
+    "AGT-Implicit_mean": 0.7666666805744171,
+    "AGT-Implicit_wilcoxon_p": 0.001953125
+  }
+]

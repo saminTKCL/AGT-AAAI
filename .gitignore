@@ -1,0 +1,50 @@
+# ── Large data & model files ──────────────────────────────────────────────────
+data/
+experiments/data/
+AuthorKit26-1/
+*.pt
+*.pth
+*.pkl
+*.npy
+*.npz
+*.h5
+*.hdf5
+
+# ── Python ────────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+*.so
+dist/
+build/
+.eggs/
+
+# ── Logs (keep summary, exclude verbose run logs) ─────────────────────────────
+logs/
+
+# ── LaTeX build artefacts ─────────────────────────────────────────────────────
+paper/*.aux
+paper/*.log
+paper/*.bbl
+paper/*.blg
+paper/*.out
+paper/*.toc
+paper/*.fls
+paper/*.fdb_latexmk
+paper/*.synctex.gz
+paper/authorkit/
+
+# ── OS / editor ───────────────────────────────────────────────────────────────
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*~
+
+# ── Jupyter / experiments ─────────────────────────────────────────────────────
+.ipynb_checkpoints/
+*.ipynb
+
+# ── Keep results CSVs + figures, exclude raw per-seed granularity PNGs ────────
+results/ablations/*.png
