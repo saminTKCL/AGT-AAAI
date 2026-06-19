@@ -35,17 +35,19 @@ def run_single(dataset: str, method: str, seed: int, device: torch.device, fast:
     if method in BASELINE_REGISTRY:
         r = train_baseline(data, method, epochs=120 if fast else 200, device=device)
         return MethodResult(method, dataset, seed, r.test_acc, r.best_val, r.train_time, r.params)
-    env = GrainEnvironment(data, device=device)
+    train_only = not method.endswith("-Leaky")
+    base_method = method[:-6] if method.endswith("-Leaky") else method
+    env = GrainEnvironment(data, device=device, train_only=train_only)
     meta = 40 if fast else 100
-    if method == "AGT":
+    if base_method == "AGT":
         r = train_agt(env, use_calibration=True, gnn_episodes=meta)
-    elif method == "AGT-closed":
+    elif base_method == "AGT-closed":
         r = train_agt(env, use_calibration=False, gnn_episodes=meta)
-    elif method == "AGT-Implicit":
+    elif base_method == "AGT-Implicit":
         r = train_agt_implicit(env, gnn_episodes=meta)
-    elif method == "AGT-Implicit-Adaptive":
+    elif base_method == "AGT-Implicit-Adaptive":
         r = train_agt_implicit_adaptive(env, gnn_episodes=meta)
-    elif method == "GRAIN-TD3":
+    elif base_method == "GRAIN-TD3":
         r = train_grain_td3(env, rl_episodes=meta, gnn_episodes=meta)
     else:
         raise ValueError(method)

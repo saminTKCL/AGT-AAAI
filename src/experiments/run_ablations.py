@@ -25,7 +25,7 @@ from src.train.trainer import train_agt, train_agt_implicit, train_grain_td3, tr
 
 def run_ablations(dataset: str, seed: int, device: torch.device, fast: bool):
     data = load_dataset(dataset, seed=seed, device=device)
-    env = GrainEnvironment(data, device=device)
+    env = GrainEnvironment(data, device=device, train_only=True)
     meta = 40 if fast else 100
     rows = []
 
@@ -39,6 +39,11 @@ def run_ablations(dataset: str, seed: int, device: torch.device, fast: bool):
     env.reset_model()
     r = train_agt_implicit(env, gnn_episodes=meta)
     rows.append({"variant": "agt_implicit", **r.__dict__, "dataset": dataset, "seed": seed})
+
+    # Leaky variant for leakage audit comparison
+    leaky_env = GrainEnvironment(data, device=device, train_only=False)
+    r = train_agt_implicit(leaky_env, gnn_episodes=meta)
+    rows.append({"variant": "agt_implicit_leaky", **r.__dict__, "dataset": dataset, "seed": seed})
 
     env.reset_model()
     r = train_with_policy(env, RandomGranularityPolicy(seed=seed), gnn_episodes=meta)

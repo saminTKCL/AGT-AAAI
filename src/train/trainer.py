@@ -215,6 +215,7 @@ def train_agt_implicit_adaptive(
     gnn_episodes: int = 100,
     implicit_k: int = 10,
     align_threshold: float = 0.35,
+    params=None,
 ) -> MethodResult:
     """AGT-Implicit-Adaptive: suppress implicit branch on graphs where features
     don't predict labels (kNN alignment < align_threshold).
@@ -232,6 +233,7 @@ def train_agt_implicit_adaptive(
         implicit_k=implicit_k,
         learnable_gate=True,
         align_threshold=align_threshold,
+        params=params,
     )
     out = _run_gnn_phase_joint(env, mv, episodes=gnn_episodes)
     train_time = time.perf_counter() - t0

@@ -1,0 +1,242 @@
+[
+  {
+    "param": "alpha_h",
+    "value": 0.5,
+    "mean_acc": 68.4684713681539,
+    "std_acc": 3.370863156418552,
+    "is_default": false,
+    "dataset": "Texas"
+  },
+  {
+    "param": "alpha_h",
+    "value": 1.0,
+    "mean_acc": 70.27027209599814,
+    "std_acc": 5.838507171998445,
+    "is_default": false,
+    "dataset": "Texas"
+  },
+  {
+    "param": "alpha_h",
+    "value": 1.5,
+    "mean_acc": 66.66666666666666,
+    "std_acc": 3.370863156418552,
+    "is_default": true,
+    "dataset": "Texas"
+  },
+  {
+    "param": "alpha_h",
+    "value": 2.0,
+    "mean_acc": 71.17117245992026,
+    "std_acc": 5.553525397081518,
+    "is_default": false,
+    "dataset": "Texas"
+  },
+  {
+    "param": "alpha_h",
+    "value": 2.5,
+    "mean_acc": 70.27027408281961,
+    "std_acc": 3.8221993488064543,
+    "is_default": false,
+    "dataset": "Texas"
+  },
+  {
+    "param": "beta_d",
+    "value": 0.1,
+    "mean_acc": 69.36937173207602,
+    "std_acc": 5.096267671601873,
+    "is_default": false,
+    "dataset": "Texas"
+  },
+  {
+    "param": "beta_d",
+    "value": 0.25,
+    "mean_acc": 69.36936974525452,
+    "std_acc": 5.553527653216476,
+    "is_default": false,
+    "dataset": "Texas"
+  },
+  {
+    "param": "beta_d",
+    "value": 0.35,
+    "mean_acc": 69.36937173207602,
+    "std_acc": 3.370862625418549,
+    "is_default": true,
+    "dataset": "Texas"
+  },
+  {
+    "param": "beta_d",
+    "value": 0.5,
+    "mean_acc": 70.27027209599814,
+    "std_acc": 2.2067486340467437,
+    "is_default": false,
+    "dataset": "Texas"
+  },
+  {
+    "param": "beta_d",
+    "value": 0.7,
+    "mean_acc": 68.4684693813324,
+    "std_acc": 2.5481310260110357,
+    "is_default": false,
+    "dataset": "Texas"
+  },
+  {
+    "param": "gamma_snr",
+    "value": 0.0,
+    "mean_acc": 69.36937173207602,
+    "std_acc": 3.370862625418549,
+    "is_default": false,
+    "dataset": "Texas"
+  },
+  {
+    "param": "gamma_snr",
+    "value": 0.15,
+    "mean_acc": 69.36937173207602,
+    "std_acc": 5.096267671601873,
+    "is_default": false,
+    "dataset": "Texas"
+  },
+  {
+    "param": "gamma_snr",
+    "value": 0.25,
+    "mean_acc": 70.27027209599814,
+    "std_acc": 4.413494834743383,
+    "is_default": true,
+    "dataset": "Texas"
+  },
+  {
+    "param": "gamma_snr",
+    "value": 0.4,
+    "mean_acc": 66.66666666666666,
+    "std_acc": 5.096264861811973,
+    "is_default": false,
+    "dataset": "Texas"
+  },
+  {
+    "param": "gamma_snr",
+    "value": 0.6,
+    "mean_acc": 69.36936974525452,
+    "std_acc": 1.2740655130055178,
+    "is_default": false,
+    "dataset": "Texas"
+  },
+  {
+    "param": "alpha_h",
+    "value": 0.5,
+    "mean_acc": 74.50980544090271,
+    "std_acc": 2.772967604077251,
+    "is_default": false,
+    "dataset": "Wisconsin"
+  },
+  {
+    "param": "alpha_h",
+    "value": 1.0,
+    "mean_acc": 75.16340017318726,
+    "std_acc": 6.470257742846918,
+    "is_default": false,
+    "dataset": "Wisconsin"
+  },
+  {
+    "param": "alpha_h",
+    "value": 1.5,
+    "mean_acc": 75.8169949054718,
+    "std_acc": 3.3326922939003514,
+    "is_default": true,
+    "dataset": "Wisconsin"
+  },
+  {
+    "param": "alpha_h",
+    "value": 2.0,
+    "mean_acc": 73.20261597633362,
+    "std_acc": 0.9243225346924171,
+    "is_default": false,
+    "dataset": "Wisconsin"
+  },
+  {
+    "param": "alpha_h",
+    "value": 2.5,
+    "mean_acc": 76.47058963775635,
+    "std_acc": 4.235777981781447,
+    "is_default": false,
+    "dataset": "Wisconsin"
+  },
+  {
+    "param": "beta_d",
+    "value": 0.1,
+    "mean_acc": 73.85621070861816,
+    "std_acc": 0.9243225346924171,
+    "is_default": false,
+    "dataset": "Wisconsin"
+  },
+  {
+    "param": "beta_d",
+    "value": 0.25,
+    "mean_acc": 74.50980544090271,
+    "std_acc": 1.6009735926681126,
+    "is_default": false,
+    "dataset": "Wisconsin"
+  },
+  {
+    "param": "beta_d",
+    "value": 0.35,
+    "mean_acc": 73.20261597633362,
+    "std_acc": 1.8486450693848342,
+    "is_default": true,
+    "dataset": "Wisconsin"
+  },
+  {
+    "param": "beta_d",
+    "value": 0.5,
+    "mean_acc": 74.50980544090271,
+    "std_acc": 1.6009735926681126,
+    "is_default": false,
+    "dataset": "Wisconsin"
+  },
+  {
+    "param": "beta_d",
+    "value": 0.7,
+    "mean_acc": 73.20261597633362,
+    "std_acc": 1.8486450693848342,
+    "is_default": false,
+    "dataset": "Wisconsin"
+  },
+  {
+    "param": "gamma_snr",
+    "value": 0.0,
+    "mean_acc": 75.8169949054718,
+    "std_acc": 4.621612673462085,
+    "is_default": false,
+    "dataset": "Wisconsin"
+  },
+  {
+    "param": "gamma_snr",
+    "value": 0.15,
+    "mean_acc": 76.47058963775635,
+    "std_acc": 1.6009735926681126,
+    "is_default": false,
+    "dataset": "Wisconsin"
+  },
+  {
+    "param": "gamma_snr",
+    "value": 0.25,
+    "mean_acc": 73.85621070861816,
+    "std_acc": 2.4455275580090077,
+    "is_default": true,
+    "dataset": "Wisconsin"
+  },
+  {
+    "param": "gamma_snr",
+    "value": 0.4,
+    "mean_acc": 76.47058963775635,
+    "std_acc": 3.201947185336225,
+    "is_default": false,
+    "dataset": "Wisconsin"
+  },
+  {
+    "param": "gamma_snr",
+    "value": 0.6,
+    "mean_acc": 73.85621070861816,
+    "std_acc": 3.3326922939003514,
+    "is_default": false,
+    "dataset": "Wisconsin"
+  }
+]

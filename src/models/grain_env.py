@@ -66,6 +66,7 @@ class GrainEnvironment:
         max_action: float = 5.0,
         alpha: float = 0.2,
         device: torch.device | None = None,
+        train_only: bool = True,
     ):
         self.device = device or torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.data = data.to(self.device)
@@ -79,7 +80,7 @@ class GrainEnvironment:
         self.val_idx = torch.where(data.val_mask)[0]
         self.test_idx = torch.where(data.test_mask)[0]
         self.policy = None
-        self._local_stats = compute_local_stats(self.data)
+        self._local_stats = compute_local_stats(self.data, train_only=train_only)
         self._build_sparse_adj(max_hop=6)
 
     def _build_sparse_adj(self, max_hop: int):
@@ -107,20 +108,23 @@ class GrainEnvironment:
             next_batch.append(int(np.random.choice(len(prob), p=prob)))
         return torch.tensor(next_batch, device=self.device, dtype=torch.long)
 
-    def make_agt_policy(self, use_calibration: bool = True) -> AnalyticGranularityPolicy:
+    def make_agt_policy(self, use_calibration: bool = True, params: CSBMParams | None = None) -> AnalyticGranularityPolicy:
         calib = CalibrationHead() if use_calibration else None
         if calib is not None:
             calib = calib.to(self.device)
+        p = params or getattr(self, "_csbm_params_override", None) or CSBMParams(k_max=self.max_action)
         return AnalyticGranularityPolicy(
             self._local_stats,
-            params=CSBMParams(k_max=self.max_action),
+            params=p,
             calibration=calib,
             device=self.device,
         )
 
-    def knn_label_alignment(self, k: int = 10) -> float:
-        """Graph-level kNN feature-label alignment (needs labels on all nodes)."""
-        from src.models.local_stats import knn_label_alignment
+    def knn_label_alignment(self, k: int = 10, train_only: bool = True) -> float:
+        """Graph-level kNN feature-label alignment computed with or without leakage."""
+        from src.models.local_stats import knn_label_alignment, knn_label_alignment_train_only
+        if train_only:
+            return knn_label_alignment_train_only(self.data, k=k)
         return knn_label_alignment(self.data, k=k)
 
     def make_multiview_aggregator(
@@ -129,11 +133,14 @@ class GrainEnvironment:
         implicit_k: int = 10,
         learnable_gate: bool = True,
         align_threshold: float = 0.0,
+        train_only: bool = True,
+        params: CSBMParams | None = None,
     ) -> "MultiViewAggregator":
         from src.models.multiview import MultiViewAggregator
-        agt = self.make_agt_policy(use_calibration=use_calibration)
+        from src.models.agt import CSBMParams
+        agt = self.make_agt_policy(use_calibration=use_calibration, params=params)
         stats = agt._stat_matrix()
-        align_scale = self.knn_label_alignment() if align_threshold > 0 else 1.0
+        align_scale = self.knn_label_alignment(train_only=train_only) if align_threshold > 0 else 1.0
         mv = MultiViewAggregator(
             self.feature_powers,
             self.data.x,

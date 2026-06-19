@@ -66,80 +66,14 @@ COLORS = {
 # Fig 1: Architecture overview
 # ─────────────────────────────────────────────────────────────────────────────
 def fig_architecture():
-    fig, ax = plt.subplots(figsize=(FULL, 3.2))
-    ax.set_xlim(0, 10)
-    ax.set_ylim(-0.4, 4.0)
-    ax.axis("off")
-
-    def box(x, y, w, h, color, label, sublabel="", fs=9):
-        rect = mpatches.FancyBboxPatch(
-            (x - w / 2, y - h / 2), w, h,
-            boxstyle="round,pad=0.1",
-            facecolor=color, edgecolor="#444", linewidth=1.0, zorder=3,
-        )
-        ax.add_patch(rect)
-        dy = 0.18 if sublabel else 0
-        ax.text(x, y + dy, label, ha="center", va="center",
-                fontsize=fs, fontweight="bold", zorder=4)
-        if sublabel:
-            ax.text(x, y - 0.25, sublabel, ha="center", va="center",
-                    fontsize=8, color="#444", zorder=4)
-
-    def arrow(x1, y1, x2, y2):
-        ax.annotate("", xy=(x2, y2), xytext=(x1, y1),
-                    arrowprops=dict(arrowstyle="-|>", color="#333", lw=1.1))
-
-    # ── Input ─────────────────────────────────────────────────────────────
-    box(0.85, 2.0, 1.3, 1.1, "#f0e6ff", "Node $v$",
-        r"$(h_v,\,d_v,\,\mathbf{x}_v)$")
-
-    # split lines
-    arrow(1.5, 2.35, 2.0, 3.0)
-    arrow(1.5, 1.65, 2.0, 1.0)
-
-    # ── Explicit branch (top) ──────────────────────────────────────────────
-    box(3.2, 3.0, 2.0, 0.85, "#d4edda", "Analytic $k^*(v)$",
-        "CSBM closed form")
-    box(5.7, 3.0, 2.0, 0.85, "#d4edda", "Explicit Agg.",
-        r"Fractional-hop ($\alpha\!=\!0.2$)")
-    arrow(4.2, 3.0, 4.7, 3.0)
-    ax.text(3.2, 3.68, "Explicit branch (AGT)  — no RL",
-            ha="center", fontsize=8.5, color="#155724", style="italic")
-
-    # ── Implicit branch (bottom) ───────────────────────────────────────────
-    box(3.2, 1.0, 2.0, 0.85, "#cce5ff", "kNN Search",
-        r"cosine sim, $K\!=\!10$")
-    box(5.7, 1.0, 2.0, 0.85, "#cce5ff", r"Implicit Gate $\beta_v$",
-        r"MLP$(h_v,d_v,\widetilde{\rm SNR}_v)$")
-    arrow(4.2, 1.0, 4.7, 1.0)
-    ax.text(3.2, 0.28, "Implicit branch (learned)",
-            ha="center", fontsize=8.5, color="#004085", style="italic")
-
-    # adaptive suppressor label (below implicit gate, not overlapping bar)
-    ax.annotate(
-        "Adaptive: set $w_{\\rm align}\\!=\\!0$\nif kNN align $< 0.35$",
-        xy=(5.7, 0.58), xytext=(5.7, -0.15),
-        fontsize=8, ha="center", color="#721c24",
-        bbox=dict(boxstyle="round,pad=0.2", fc="#ffeaea", ec="#d62728", lw=0.8),
-        arrowprops=dict(arrowstyle="-|>", color="#d62728", lw=0.9),
-    )
-
-    # ── Combine ────────────────────────────────────────────────────────────
-    arrow(6.7, 3.0, 7.5, 2.35)
-    arrow(6.7, 1.0, 7.5, 1.65)
-    box(8.1, 2.0, 1.9, 0.9, "#fff3cd", "Multi-view",
-        r"$\mathbf{h}_v^{\rm exp} + w\,\beta_v\,\mathbf{h}_v^{\rm imp}$")
-
-    # ── Classifier ────────────────────────────────────────────────────────
-    arrow(9.05, 2.0, 9.6, 2.0)
-    box(9.8, 2.0, 0.35, 0.7, "#f8d7da", "MLP", "")
-    ax.text(9.8, 2.0, "MLP\n$\\hat{y}_v$", ha="center", va="center",
-            fontsize=8.5, fontweight="bold", zorder=5)
-
-    ax.set_title("AGT-Implicit Architecture", fontsize=11, fontweight="bold", pad=6)
-    fig.savefig(FIG_DIR / "fig_architecture.pdf")
-    plt.close(fig)
-    print("  Saved fig_architecture.pdf")
+    src_png = FIG_DIR / "fig_architecture_source.png"
+    if src_png.exists():
+        from PIL import Image
+        img = Image.open(src_png).convert("RGB")
+        img.save(FIG_DIR / "fig_architecture.pdf")
+        print("  Saved fig_architecture.pdf (from source PNG)")
+    else:
+        print("  WARNING: fig_architecture_source.png not found, cannot build fig_architecture.pdf")
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -186,7 +120,7 @@ def fig_kstar_homophily():
         device = torch.device("cpu")
         d_texas = load_dataset("Texas", seed=0, device=device)
         env = GrainEnvironment(d_texas, device=device)
-        hom   = env._local_stats[:, 0].numpy()
+        hom   = env._local_stats['homophily'].numpy()
         k_val = env.make_agt_policy().granularity.detach().numpy()
         ax2.scatter(hom, k_val, s=18, alpha=0.55, color="#1f77b4", edgecolors="none")
         m, b = np.polyfit(hom, k_val, 1)
@@ -220,23 +154,20 @@ def fig_knn_alignment():
     aligns    = [d["knn_feature_label_align"] for d in data]
     threshold = 0.35
 
-    fig, ax = plt.subplots(figsize=(COL + 0.8, 3.0))
+    fig, ax = plt.subplots(figsize=(COL + 1.4, 3.2))
 
     colors = ["#d62728" if a < threshold else "#2ca02c" for a in aligns]
     xs = np.arange(len(dsets))
     bars = ax.bar(xs, aligns, color=colors, edgecolor="#444",
                   linewidth=0.7, width=0.55)
     ax.set_xticks(xs)
-    ax.set_xticklabels(dsets, fontsize=10)
+    ax.set_xticklabels(dsets, rotation=30, ha="right", fontsize=9.5)
     ax.set_ylim(0, 0.95)
     ax.set_ylabel("kNN Feature–Label Alignment", fontsize=10)
     ax.set_title("Adaptive Gate: kNN Alignment per Graph", fontsize=10)
 
-    # threshold line with label to the right (not overlapping bars)
+    # threshold line
     ax.axhline(threshold, ls="--", color="#555", lw=1.2)
-    ax.text(len(dsets) - 0.45, threshold + 0.02,
-            f"threshold = {threshold}", ha="right", va="bottom",
-            fontsize=8.5, color="#555")
 
     # value labels above each bar with enough clearance
     for bar, a in zip(bars, aligns):
@@ -245,9 +176,11 @@ def fig_knn_alignment():
                 f"{a:.2f}", ha="center", va="bottom", fontsize=9)
 
     # legend patches (no text box overlapping bars)
+    from matplotlib.lines import Line2D
     p1 = mpatches.Patch(color="#2ca02c", label="Implicit branch ACTIVE")
     p2 = mpatches.Patch(color="#d62728", label="Implicit branch SUPPRESSED")
-    ax.legend(handles=[p1, p2], loc="upper right", fontsize=8.5)
+    t_line = Line2D([0], [0], color="#555", linestyle="--", linewidth=1.2, label=f"Threshold ({threshold})")
+    ax.legend(handles=[p1, p2, t_line], loc="upper right", fontsize=8.5)
 
     fig.tight_layout()
     fig.savefig(FIG_DIR / "fig_knn_alignment.pdf")
@@ -276,9 +209,9 @@ def fig_main_benchmark():
     ]
     groups = [[d for d in g if d in df["dataset"].unique()] for g in groups]
 
-    fig, axes = plt.subplots(1, 2, figsize=(FULL, 3.4),
+    fig, axes = plt.subplots(1, 2, figsize=(FULL, 4.0),
                              gridspec_kw={"width_ratios": [4, 5]})
-    fig.subplots_adjust(wspace=0.3)
+    fig.subplots_adjust(wspace=0.3, bottom=0.24, top=0.88)
 
     for ax, group in zip(axes, groups):
         n_ds = len(group)
@@ -309,13 +242,13 @@ def fig_main_benchmark():
     # shared legend below both panels
     handles, labels = axes[0].get_legend_handles_labels()
     fig.legend(handles, labels, loc="lower center", ncol=4,
-               bbox_to_anchor=(0.5, -0.06), fontsize=9,
+               bbox_to_anchor=(0.5, 0.02), fontsize=9,
                columnspacing=1.0, handlelength=1.2)
 
     axes[0].set_title("(a) Heterophilous")
     axes[1].set_title("(b) Wikipedia + Citation")
     fig.suptitle("Benchmark Results (10 seeds, geom-gcn splits)",
-                 fontsize=11, fontweight="bold", y=1.01)
+                 fontsize=11, fontweight="bold", y=0.96)
 
     fig.savefig(FIG_DIR / "fig_benchmark.pdf")
     plt.close(fig)
@@ -340,8 +273,8 @@ def fig_td3_vs_kstar():
         from src.models.grain_env import GrainEnvironment
 
         ds_names = ["Texas", "Chameleon", "Cora"]
-        fig, axes = plt.subplots(1, 3, figsize=(FULL, 3.0))
-        fig.subplots_adjust(wspace=0.38)
+        fig, axes = plt.subplots(1, 3, figsize=(FULL, 3.2))
+        fig.subplots_adjust(wspace=0.38, top=0.78, bottom=0.15)
 
         for ax, ds_name in zip(axes, ds_names):
             device  = torch.device("cpu")
@@ -373,7 +306,7 @@ def fig_td3_vs_kstar():
         fig.suptitle(
             r"$k^*$ is structured (std $\approx 0.5$–$0.8$);  TD3 actions are"
             r" near-uniform ($r \approx 0$)",
-            fontsize=10, fontweight="bold",
+            fontsize=10, fontweight="bold", y=0.98,
         )
         fig.savefig(FIG_DIR / "fig_td3_vs_kstar.pdf")
         plt.close(fig)
@@ -423,8 +356,8 @@ def fig_efficiency():
     ax.set_ylabel("Speedup vs GRAIN-TD3", fontsize=10)
     ax.set_title("Training Efficiency", fontsize=11)
     ax.set_ylim(0, max(df.get("implicit_speedup", pd.Series([2.5])).max(),
-                       df.get("agt_speedup", pd.Series([1.5])).max()) + 0.6)
-    ax.legend(fontsize=9)
+                       df.get("agt_speedup", pd.Series([1.5])).max()) + 0.9)
+    ax.legend(loc="upper center", ncol=3, fontsize=9)
 
     fig.tight_layout()
     fig.savefig(FIG_DIR / "fig_efficiency.pdf")
@@ -555,10 +488,12 @@ def fig_ablation():
                        error_kw=dict(lw=0.9, capsize=3, capthick=0.9))
 
         # value labels to the RIGHT of each bar, outside
-        for bar, m in zip(bars, means_pct):
-            ax.text(bar.get_width() + max(stds_pct) + 0.3,
+        for i, (bar, m) in enumerate(zip(bars, means_pct)):
+            ax.text(bar.get_width() + stds_pct[i] + 0.3,
                     bar.get_y() + bar.get_height() / 2,
-                    f"{m:.1f}", ha="left", va="center", fontsize=8.5)
+                    f"{m:.1f}", ha="left", va="center", fontsize=8.5,
+                    bbox=dict(facecolor='white', edgecolor='none', pad=1.0, alpha=0.8),
+                    zorder=5)
 
         ax.set_yticks(y)
         ax.set_yticklabels(labels, fontsize=9.5)
@@ -568,7 +503,7 @@ def fig_ablation():
         ax.set_xlim(right=max(means_pct) + max(stds_pct) + 4)
 
         best_idx = int(np.argmax(means_pct))
-        ax.axvline(means_pct[best_idx], ls="--", lw=1.0, color="#555")
+        ax.axvline(means_pct[best_idx], ls="--", lw=1.0, color="#555", zorder=1)
 
     fig.tight_layout(pad=1.2)
     fig.savefig(FIG_DIR / "fig_ablation.pdf")
