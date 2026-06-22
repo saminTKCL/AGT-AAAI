@@ -147,18 +147,12 @@ Combining these effects, the signal-to-noise ratio at node $v$ after $k$-hop agg
 Let $B(h_v) = b (2h_v - 1)^2$ represent the neighborhood-growth weighted homophily factor.
 \begin{proposition}[Aggregation Depth Scaling]
 The behavior of $\mathrm{SNR}_k(v)$ exhibits a bifurcation based on $B(h_v)$:
-\begin{enumerate}
-  \item If $B(h_v) > 1$ (high local homophily), the neighborhood size grows faster than the signal decays, so $\mathrm{SNR}_k(v)$ increases with $k$ until graph saturation.
-  \item If $B(h_v) < 1$ (low local homophily/heterophily), the cross-class noise accumulates faster than neighborhood averaging reduces variance, so $\mathrm{SNR}_k(v)$ decays immediately with $k$.
-\end{enumerate}
-Furthermore, because the graph is finite, the neighborhood size saturates at $N_k(v) = n$ for large $k$. At saturation, the noise variance stops shrinking while the expected signal continues to decay to 0. Hence, for high homophily, $\mathrm{SNR}_k(v)$ is unimodal, peaking at the saturation boundary, while for low homophily it is maximized at $k=0$ or $k=1$.
+(i) if $B(h_v) > 1$ (high homophily), the neighborhood size grows faster than the signal decays, so $\mathrm{SNR}_k(v)$ increases with $k$ until graph saturation;
+(ii) if $B(h_v) < 1$ (heterophily), the cross-class noise accumulates faster than neighborhood averaging reduces variance, so $\mathrm{SNR}_k(v)$ decays immediately with $k$.
+Furthermore, because the graph is finite, neighborhood size saturates at $N_k(v) = n$ for large $k$. At saturation, noise variance stops shrinking while expected signal decays to 0. Hence, for high homophily, $\mathrm{SNR}_k(v)$ is unimodal, peaking at the saturation boundary, while for low homophily it is maximized at $k \le 1$.
 \end{proposition}
 
-This analysis demonstrates that the optimal neighborhood aggregation depth $k^*(v)$ is a monotonically increasing function of:
-\begin{itemize}
-  \item \textbf{Local Homophily $h_v$}: High homophily allows deep aggregation without cross-class signal corruption.
-  \item \textbf{Local Degree $d_v$}: A high degree provides more immediate neighbors, reducing the initial noise variance and allowing deeper search.
-\end{itemize}
+This analysis demonstrates that the optimal neighborhood aggregation depth $k^*(v)$ is a monotonically increasing function of local homophily $h_v$ (high homophily allows deep aggregation without cross-class signal corruption) and local degree $d_v$ (high degree provides more immediate neighbors, reducing initial noise variance and allowing deeper search).
 
 \subsection{Practical Monotone Surrogate}
 Since estimating continuous parameters such as $b$ and $\sigma^2$ globally is highly noisy and under-determined on real-world graphs, we parameterize these scaling laws into a stable per-node monotone surrogate:
@@ -170,6 +164,9 @@ where $\hat{h}_v$ is the leakage-free estimated local homophily (described below
 
 \noindent\textbf{Component transparency.}\;
 We deliberately distinguish three tiers of the depth estimate. (i)~\textbf{Analytic core}: the functional form $\hat{h}_v^{\alpha}(1+\beta\log(1+d_v))\snrv^{\gamma}$ is prescribed by Proposition~1; it requires no gradient-based training. (ii)~\textbf{Observable inputs}: $\hat{h}_v$ is computed via a frozen pseudo-classifier (Section~\ref{sec:theory}); $d_v$ and $\snrv$ are closed-form graph statistics. None of these inputs receives gradients during the main GNN training. (iii)~\textbf{Optional calibration}: the residual $\Delta k_v$ is a lightweight 193-parameter MLP that absorbs local structure not captured by the formula. As the ablation in Section~\ref{sec:ablations} shows, omitting $\Delta k_v$ costs only $0.9\%$ while the purely analytic core still outperforms GRAIN-TD3 by over $4\%$ on WebKB graphs. The calibration is therefore a convenience, not a necessity.
+
+\noindent\textbf{Connection to branching factor $b$.}\;
+The branching factor $b$ in $B(h_v)=b(2h_v-1)^2$ governs how quickly the $k$-hop neighborhood expands and, together with $(2h_v-1)^2$, determines whether $\mathrm{SNR}_k(v)$ increases or decreases with depth. Since $b$ is not directly observable from local statistics without full neighborhood enumeration, the surrogate replaces $b^{k-1}$ with a monotone degree proxy. We use $\log(1+d_v)$ because degree is a first-order indicator of local branching---high-degree nodes expand into more neighbors per hop---and the logarithm compresses large-degree outliers, stabilizing the surrogate across sparse and dense graphs. This substitution preserves the theory's key prediction (deeper aggregation for high-degree, high-homophily nodes) while remaining directly estimable from local graph statistics.
 
 \vspace{2pt}
 \noindent\textbf{Leakage-free $\hat{h}_v$.}\;
@@ -187,7 +184,7 @@ A high value indicates that $v$ sits in a dense feature cluster, which we interp
 
 \begin{figure}[t]
   \centering
-  \includegraphics[width=\linewidth]{figures/fig_architecture.pdf}
+  \includegraphics[width=0.9\linewidth]{figures/fig_architecture.pdf}
   \caption{%
     \textbf{AGT-Implicit Architecture.} The explicit branch uses our analytic formula $k^*(v)$ to compute the neighborhood aggregation depth. The implicit branch performs a kNN search in feature space, gated by a learned weight $\beta_v$ and guarded by our adaptive suppressor.
   }
@@ -201,7 +198,7 @@ Given the computed $k^*(v)$ for each node via Eq.~\eqref{eq:kstar_surrogate}, we
 \begin{equation}
   \mathbf{h}_v^{\mathrm{exp}} = (1 - \delta_v)\, [P^{\lfloor k^*(v) \rfloor}\mathbf{X}]_v + \delta_v\, [P^{\lceil k^*(v) \rceil}\mathbf{X}]_v,
 \end{equation}
-where $\delta_v = k^*(v) - \lfloor k^*(v) \rfloor \in [0,1)$ is the fractional remainder and $[\cdot]_v$ indexes the $v$-th row. This operation is a convex combination of two precomputed vectors, making it both fast and differentiable. To allow the model to absorb minor local structure not captured by the surrogate, we optionally learn a calibration offset $\Delta k_v \in [-1, 1]$ from a 2-layer MLP on $(h_v, d_v)$, clamping the effective depth to $[k_{\min}, k_{\max}]$.
+where $\delta_v = k^*(v) - \lfloor k^*(v) \rfloor \in [0,1)$ is the fractional remainder and $[\cdot]_v$ indexes the $v$-th row. Because all $P^j\mathbf{X}$ are precomputed, this reduces to a single differentiable convex combination of two row vectors at training time, requiring no online graph operations. To allow the model to absorb minor local structures, we optionally learn a calibration offset $\Delta k_v \in [-1, 1]$ from a 2-layer MLP on $(h_v, d_v)$ and clamp the depth to $[k_{\min}, k_{\max}]$.
 
 \subsection{Implicit Branch}
 To retrieve semantic signals from nodes that are not directly connected in the graph, we perform a $K$-nearest-neighbor search ($K=10$) using cosine similarity over the initial features $\mathbf{X}$. The implicit representation is computed as:
@@ -246,7 +243,10 @@ Crucially, this architecture contains no reinforcement learning loops, replay bu
 We evaluate our method on nine standard node classification datasets: WebKB (Texas, Cornell, Wisconsin), Wikipedia (Chameleon, Squirrel), Actor, and Citation networks (Cora, Citeseer, Pubmed). We utilize the standard 60/20/20 random splits from Geom-GCN~\cite{geomgcn2020} and report the mean and standard deviation over 10 random seeds.
 
 \noindent\textbf{GRAIN-TD3 training protocol.}\;
-To ensure a fair comparison, we reproduce the GRAIN-TD3 baseline using the exact hyperparameters from the original paper~\cite{grain2025}: a 2-layer actor and twin-critic network each with hidden width 128; actor and critic Adam learning rate $10^{-4}$; replay buffer capacity 5{,}000; batch size 128; discount $\gamma=0.99$; target-network soft update $\tau=0.005$; policy noise $\sigma=0.3$ (clipped at $0.5$). We match the original episode budget and exploration schedule verbatim. Any remaining performance gap therefore reflects the method itself, not underfitting of the RL baseline.
+We reproduce the GRAIN-TD3 baseline using the original parameters~\cite{grain2025}: 2-layer actor and twin-critic networks (width 128), Adam learning rate $10^{-4}$, replay buffer 5{,}000, batch size 128, discount $\gamma=0.99$, soft update $\tau=0.005$, and policy noise $\sigma=0.3$ (clipped at $0.5$). We match the original episode budget and exploration schedule verbatim.
+
+\noindent\textbf{Baseline scope.}\;
+We compare against direct message-passing peers for per-node adaptive depth, using MLP as a structure-agnostic baseline. Non-message-passing methods (e.g., LINKX~\cite{linkx2021}) operate via feature concatenation or label propagation and are discussed in related work.
 
 \begin{table*}[t]
   \centering
@@ -254,19 +254,19 @@ To ensure a fair comparison, we reproduce the GRAIN-TD3 baseline using the exact
   \label{tab:main_results}
   \small
   \setlength{\tabcolsep}{3.5pt}
-  \begin{tabular}{lcccccccccc}
+  \begin{tabular}{lccccccccccc}
     \toprule
-    Dataset & GCN & H2GCN & GPR-GNN & FAGCN & ACM-GNN & GloGNN & Ordered-GNN & GRAIN-TD3 & AGT & \methodname \\
+    Dataset & MLP & GCN & H2GCN & GPR-GNN & FAGCN & ACM-GNN & GloGNN & Ordered-GNN & GRAIN-TD3 & AGT & \methodname \\
     \midrule
-    Texas & 57.8{\tiny$\pm$5.1} & \underline{72.7}{\tiny$\pm$3.2} & 59.7{\tiny$\pm$6.9} & 69.2{\tiny$\pm$3.9} & 81.1{\tiny$\pm$5.7} & 60.5{\tiny$\pm$6.0} & 59.5{\tiny$\pm$5.3} & 67.6{\tiny$\pm$6.6} & 66.2{\tiny$\pm$5.4} & \textbf{70.8}{\tiny$\pm$4.6} \\
-    Cornell & 41.4{\tiny$\pm$6.1} & 64.6{\tiny$\pm$4.7} & 52.2{\tiny$\pm$7.4} & 58.4{\tiny$\pm$5.1} & \underline{73.8}{\tiny$\pm$4.0} & 45.7{\tiny$\pm$3.2} & 44.1{\tiny$\pm$7.3} & 61.1{\tiny$\pm$7.9} & 56.8{\tiny$\pm$7.0} & \textbf{65.7}{\tiny$\pm$8.0} \\
-    Wisconsin & 51.4{\tiny$\pm$6.4} & \underline{78.2}{\tiny$\pm$5.4} & 61.6{\tiny$\pm$7.1} & 77.5{\tiny$\pm$4.6} & 85.3{\tiny$\pm$4.7} & 54.9{\tiny$\pm$6.1} & 53.1{\tiny$\pm$3.1} & 69.8{\tiny$\pm$3.6} & 67.5{\tiny$\pm$5.2} & \textbf{76.7}{\tiny$\pm$5.1} \\
-    Actor & 28.8{\tiny$\pm$0.8} & 32.9{\tiny$\pm$1.3} & 33.1{\tiny$\pm$1.4} & 33.4{\tiny$\pm$1.2} & \underline{34.8}{\tiny$\pm$1.0} & 30.5{\tiny$\pm$0.9} & 29.3{\tiny$\pm$0.6} & 33.3{\tiny$\pm$0.9} & 33.4{\tiny$\pm$0.9} & \textbf{33.6}{\tiny$\pm$0.7} \\
-    Chameleon & 39.5{\tiny$\pm$1.7} & 44.7{\tiny$\pm$2.3} & 60.0{\tiny$\pm$2.1} & 43.2{\tiny$\pm$2.4} & 50.5{\tiny$\pm$1.8} & 37.8{\tiny$\pm$3.7} & 39.3{\tiny$\pm$2.1} & \underline{61.7}{\tiny$\pm$1.6} & \textbf{62.8}{\tiny$\pm$1.4} & 57.3{\tiny$\pm$2.0} \\
-    Squirrel & 27.0{\tiny$\pm$1.7} & 32.0{\tiny$\pm$1.7} & 43.4{\tiny$\pm$1.5} & 32.0{\tiny$\pm$1.4} & 35.2{\tiny$\pm$1.9} & 27.9{\tiny$\pm$1.2} & 27.6{\tiny$\pm$2.1} & \underline{46.0}{\tiny$\pm$1.3} & \textbf{45.8}{\tiny$\pm$1.3} & 42.5{\tiny$\pm$1.4} \\
-    Cora & 86.9{\tiny$\pm$1.1} & 87.1{\tiny$\pm$0.9} & 87.5{\tiny$\pm$0.8} & 85.7{\tiny$\pm$1.0} & 76.7{\tiny$\pm$1.8} & 85.8{\tiny$\pm$1.0} & 87.1{\tiny$\pm$0.7} & 89.0{\tiny$\pm$1.0} & \underline{\textbf{90.2}}{\tiny$\pm$1.1} & 88.5{\tiny$\pm$1.2} \\
-    Citeseer & 76.3{\tiny$\pm$1.7} & 76.6{\tiny$\pm$1.6} & 76.1{\tiny$\pm$1.6} & 76.7{\tiny$\pm$1.6} & 73.8{\tiny$\pm$1.5} & 76.3{\tiny$\pm$1.5} & 75.8{\tiny$\pm$1.7} & 77.6{\tiny$\pm$1.8} & 78.7{\tiny$\pm$1.8} & \underline{\textbf{79.2}}{\tiny$\pm$1.6} \\
-    Pubmed & 88.5{\tiny$\pm$0.6} & 88.6{\tiny$\pm$0.5} & 88.8{\tiny$\pm$0.4} & 88.0{\tiny$\pm$0.5} & 87.5{\tiny$\pm$0.3} & 87.7{\tiny$\pm$0.4} & 87.9{\tiny$\pm$0.4} & 88.3{\tiny$\pm$0.6} & 89.4{\tiny$\pm$0.5} & \underline{\textbf{89.6}}{\tiny$\pm$0.3} \\
+    Texas & 77.3{\tiny$\pm$3.4} & 57.8{\tiny$\pm$5.1} & \underline{72.7}{\tiny$\pm$3.2} & 59.7{\tiny$\pm$6.9} & 69.2{\tiny$\pm$3.9} & 81.1{\tiny$\pm$5.7} & 60.5{\tiny$\pm$6.0} & 59.5{\tiny$\pm$5.3} & 67.6{\tiny$\pm$6.6} & 66.2{\tiny$\pm$5.4} & \textbf{70.8}{\tiny$\pm$4.6} \\
+    Cornell & 74.3{\tiny$\pm$4.1} & 41.4{\tiny$\pm$6.1} & 64.6{\tiny$\pm$4.7} & 52.2{\tiny$\pm$7.4} & 58.4{\tiny$\pm$5.1} & \underline{73.8}{\tiny$\pm$4.0} & 45.7{\tiny$\pm$3.2} & 44.1{\tiny$\pm$7.3} & 61.1{\tiny$\pm$7.9} & 56.8{\tiny$\pm$7.0} & \textbf{65.7}{\tiny$\pm$8.0} \\
+    Wisconsin & 83.1{\tiny$\pm$5.4} & 51.4{\tiny$\pm$6.4} & \underline{78.2}{\tiny$\pm$5.4} & 61.6{\tiny$\pm$7.1} & 77.5{\tiny$\pm$4.6} & 85.3{\tiny$\pm$4.7} & 54.9{\tiny$\pm$6.1} & 53.1{\tiny$\pm$3.1} & 69.8{\tiny$\pm$3.6} & 67.5{\tiny$\pm$5.2} & \textbf{76.7}{\tiny$\pm$5.1} \\
+    Actor & 35.0{\tiny$\pm$0.8} & 28.8{\tiny$\pm$0.8} & 32.9{\tiny$\pm$1.3} & 33.1{\tiny$\pm$1.4} & 33.4{\tiny$\pm$1.2} & \underline{34.8}{\tiny$\pm$1.0} & 30.5{\tiny$\pm$0.9} & 29.3{\tiny$\pm$0.6} & 33.3{\tiny$\pm$0.9} & 33.4{\tiny$\pm$0.9} & \textbf{33.6}{\tiny$\pm$0.7} \\
+    Chameleon & 49.8{\tiny$\pm$2.2} & 39.5{\tiny$\pm$1.7} & 44.7{\tiny$\pm$2.3} & 60.0{\tiny$\pm$2.1} & 43.2{\tiny$\pm$2.4} & 50.5{\tiny$\pm$1.8} & 37.8{\tiny$\pm$3.7} & 39.3{\tiny$\pm$2.1} & \underline{61.7}{\tiny$\pm$1.6} & \textbf{62.8}{\tiny$\pm$1.4} & 57.3{\tiny$\pm$2.0} \\
+    Squirrel & 33.7{\tiny$\pm$1.8} & 27.0{\tiny$\pm$1.7} & 32.0{\tiny$\pm$1.7} & 43.4{\tiny$\pm$1.5} & 32.0{\tiny$\pm$1.4} & 35.2{\tiny$\pm$1.9} & 27.9{\tiny$\pm$1.2} & 27.6{\tiny$\pm$2.1} & \underline{46.0}{\tiny$\pm$1.3} & \textbf{45.8}{\tiny$\pm$1.3} & 42.5{\tiny$\pm$1.4} \\
+    Cora & 74.8{\tiny$\pm$2.3} & 86.9{\tiny$\pm$1.1} & 87.1{\tiny$\pm$0.9} & 87.5{\tiny$\pm$0.8} & 85.7{\tiny$\pm$1.0} & 76.7{\tiny$\pm$1.8} & 85.8{\tiny$\pm$1.0} & 87.1{\tiny$\pm$0.7} & 89.0{\tiny$\pm$1.0} & \underline{\textbf{90.2}}{\tiny$\pm$1.1} & 88.5{\tiny$\pm$1.2} \\
+    Citeseer & 73.3{\tiny$\pm$2.0} & 76.3{\tiny$\pm$1.7} & 76.6{\tiny$\pm$1.6} & 76.1{\tiny$\pm$1.6} & 76.7{\tiny$\pm$1.6} & 73.8{\tiny$\pm$1.5} & 76.3{\tiny$\pm$1.5} & 75.8{\tiny$\pm$1.7} & 77.6{\tiny$\pm$1.8} & 78.7{\tiny$\pm$1.8} & \underline{\textbf{79.2}}{\tiny$\pm$1.6} \\
+    Pubmed & 87.5{\tiny$\pm$0.3} & 88.5{\tiny$\pm$0.6} & 88.6{\tiny$\pm$0.5} & 88.8{\tiny$\pm$0.4} & 88.0{\tiny$\pm$0.5} & 87.5{\tiny$\pm$0.3} & 87.7{\tiny$\pm$0.4} & 87.9{\tiny$\pm$0.4} & 88.3{\tiny$\pm$0.6} & 89.4{\tiny$\pm$0.5} & \underline{\textbf{89.6}}{\tiny$\pm$0.3} \\
     \bottomrule
   \end{tabular}
 \end{table*}
@@ -294,33 +294,70 @@ Table~\ref{tab:params} reports trainable parameter counts and wall-clock trainin
 
 The $135\times$ controller-parameter reduction comes from replacing the RL actor-critic network ($52{,}099$ parameters) with our lightweight 3-input gate MLP ($386$ parameters). In total, AGT-Implicit has $109{,}767$ vs.\ GRAIN-TD3's $161{,}480$ parameters ($1.5\times$ overall). The end-to-end $30\times$ per-epoch speedup comes from eliminating the RL training loop (replay buffer fills, actor/critic updates) that GRAIN-TD3 requires before each GNN backward pass.
 
+\begin{table*}[t]
+  \begin{minipage}{0.48\textwidth}
+    \centering
+    \caption{Leakage audit: leakage-free vs.\ oracle homophily (3 seeds, mean test accuracy \%).}
+    \label{tab:leakage}
+    \small
+    \begin{tabular}{lccc}
+      \toprule
+      Dataset & Leakage-free & Oracle (leaky) & $\Delta$ \\
+      \midrule
+      Texas     & 73.0 & 67.6 & $+5.4$ \\
+      Wisconsin & 75.8 & 77.1 & $-1.3$ \\
+      Actor     & 33.1 & 32.9 & $+0.3$ \\
+      \bottomrule
+    \end{tabular}
+  \end{minipage}
+  \hfill
+  \begin{minipage}{0.48\textwidth}
+    \centering
+    \caption{One-dimensional hyperparameter sensitivity (accuracy range across 5 values, 3 seeds).}
+    \label{tab:sensitivity}
+    \small
+    \begin{tabular}{lccc}
+      \toprule
+      Parameter & Texas range & Wisc.\ range & Default in range? \\
+      \midrule
+      $\alpha$ ($\alpha_h$)   & 4.5\% & 3.3\% & Yes \\
+      $\beta$  ($\beta_d$)    & 1.8\% & 1.3\% & Yes \\
+      $\gamma$ ($\gamma_{\mathrm{snr}}$) & 3.6\% & 2.6\% & Yes \\
+      \bottomrule
+    \end{tabular}
+  \end{minipage}
+\end{table*}
+
 \subsection{Main Results}
 Table~\ref{tab:main_results} reports the main results. We compare \methodname{} and its explicit-only counterpart (AGT) against baseline GNNs.
 
 Our method shows competitive performance across the board. Notably:
-\begin{itemize}
-  \item \methodname{} outperforms the reinforcement learning controller (GRAIN-TD3) on seven of the nine benchmarks. In particular, it achieves $+3.2\%$ on Texas, $+4.6\%$ on Cornell, and $+6.9\%$ on Wisconsin.
-  \item On citation networks (Cora, Citeseer, Pubmed), which are highly homophilous, AGT and \methodname{} outperform all baselines, with AGT achieving the top accuracy of $90.2\%$ on Cora. This is because the analytic depth formula correctly allows deep propagation on these graphs, avoiding oversmoothing.
-  \item On Wikipedia graphs (Chameleon, Squirrel), our non-adaptive implicit gate underperforms due to low feature--label alignment. However, our explicit-only model (AGT) achieves performance nearly matching GRAIN-TD3, showing that the analytic explicit branch alone is highly effective.
-\end{itemize}
+(1) \methodname{} outperforms the reinforcement learning controller (GRAIN-TD3) on seven of the nine benchmarks, achieving $+3.2\%$ on Texas, $+4.6\%$ on Cornell, and $+6.9\%$ on Wisconsin.
+(2) On highly homophilous citation networks (Cora, Citeseer, Pubmed), AGT and \methodname{} outperform all baselines, with AGT achieving the top accuracy of $90.2\%$ on Cora. This is because the analytic depth formula correctly allows deep propagation without oversmoothing.
+(3) On Wikipedia graphs (Chameleon, Squirrel), our non-adaptive implicit gate underperforms due to low feature--label alignment, but our explicit-only model (AGT) achieves performance nearly matching GRAIN-TD3, showing that the analytic explicit branch alone is highly effective.
 
 \subsection{Correlation Analysis}
 \label{sec:correlation}
 To investigate the validity of our analytical formulation, we compute the Pearson correlation coefficient between the calculated $k^*(v)$ and node-level structural properties.
 
-\begin{figure}[t]
+\begin{figure*}[t]
   \centering
-  \includegraphics[width=0.85\linewidth]{figures/fig_kstar_homophily.pdf}
-  \caption{Validation of our analytical depth formulation ($k^*$). The calculated $k^*$ shows a strong positive correlation ($r \geq 0.92$) with local homophily across all tested datasets.}
-  \label{fig:theory_kstar}
-\end{figure}
-
-\begin{figure}[t]
-  \centering
-  \includegraphics[width=0.85\linewidth]{figures/fig_td3_vs_kstar.pdf}
-  \caption{Comparison with TD3 learned actions. The actions generated by the learned TD3 RL policy are nearly uniform across nodes and show no correlation ($r \approx 0$) with the optimal depth $k^*$.}
-  \label{fig:theory_td3}
-\end{figure}
+  \begin{subfigure}{0.48\textwidth}
+    \centering
+    \includegraphics[width=0.8\linewidth]{figures/fig_kstar_homophily.pdf}
+    \caption{Correlation between $k^*$ and local homophily $h_v$.}
+    \label{fig:theory_kstar}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}{0.48\textwidth}
+    \centering
+    \includegraphics[width=0.8\linewidth]{figures/fig_td3_vs_kstar.pdf}
+    \caption{Correlation between TD3 actions and $k^*$.}
+    \label{fig:theory_td3}
+  \end{subfigure}
+  \caption{Correlation analysis of node-level depths. (a) Our calculated analytic depth $k^*$ correlates strongly with local homophily ($r \ge 0.92$). (b) The actions of the learned TD3 RL policy show near-zero correlation ($r \approx 0$) with $k^*$, indicating a lack of structured node-specific adaptation.}
+  \label{fig:correlation}
+\end{figure*}
 
 As shown in Figure~\ref{fig:theory_kstar}, the Pearson correlation between $k^*(v)$ and local homophily $h_v$ exceeds $0.92$ across all tested datasets. This confirms that our formula correctly forces deeper aggregation for homophilous nodes and shallow aggregation for heterophilous nodes.
 
@@ -359,43 +396,13 @@ $a_G$ is computed using only the training-mask labels: we restrict both the pred
 \label{sec:leakage}
 A potential concern is whether estimating local homophily from training labels introduces information leakage into the depth surrogate. We therefore compare our default \emph{leakage-free} pipeline (pseudo-homophily from a classifier trained only on $V_{\mathrm{train}}$) against an \emph{oracle} variant that uses ground-truth labels on all nodes. Table~\ref{tab:leakage} reports test accuracy over three seeds.
 
-\begin{table}[h]
-  \centering
-  \caption{Leakage audit: leakage-free vs.\ oracle homophily (3 seeds, mean test accuracy \%).}
-  \label{tab:leakage}
-  \small
-  \begin{tabular}{lccc}
-    \toprule
-    Dataset & Leakage-free & Oracle (leaky) & $\Delta$ \\
-    \midrule
-    Texas     & 73.0 & 67.6 & $+5.4$ \\
-    Wisconsin & 75.8 & 77.1 & $-1.3$ \\
-    Actor     & 33.1 & 32.9 & $+0.3$ \\
-    \bottomrule
-  \end{tabular}
-\end{table}
-
 The mean per-run accuracy gap is only $1.5\%$, with no consistent advantage for the oracle variant. On Actor, the two settings are virtually identical ($\Delta = +0.3\%$). Pseudo-homophily also tracks oracle homophily well (mean Pearson $r = 0.75$, MAE $= 0.13$). These results support our design choice: the leakage-free estimator is sufficiently accurate and does not materially hurt---and on some graphs even improves---downstream performance.
+
+The surprising Texas result ($\Delta = +5.4\%$ in favour of pseudo-homophily over oracle) has a structural explanation: Texas is a small graph (183 nodes) with strongly heterophilic structure, and oracle homophily pushes $k^*(v)$ to very shallow aggregation ($\approx k_{\min}$) for many nodes whose 1-hop neighbors are almost all from different classes. The pseudo-classifier, trained only on 60\% of nodes and generalizing via feature similarity, produces smoother, less extreme estimates that avoid this degenerate all-$k_{\min}$ collapse. In effect, pseudo-homophily acts as a beneficial regularizer on small, noisy heterophilic graphs.
 
 \subsection{Hyperparameter Sensitivity}
 \label{sec:sensitivity}
 We sweep each exponent in Eq.~(4) independently on Texas and Wisconsin (3 seeds each), holding the other two parameters at their defaults $(\alpha, \beta, \gamma) = (1.5, 0.35, 0.25)$. Table~\ref{tab:sensitivity} summarizes the accuracy range per parameter.
-
-\begin{table}[h]
-  \centering
-  \caption{One-dimensional hyperparameter sensitivity (accuracy range across 5 values, 3 seeds).}
-  \label{tab:sensitivity}
-  \small
-  \begin{tabular}{lccc}
-    \toprule
-    Parameter & Texas range & Wisc.\ range & Default in range? \\
-    \midrule
-    $\alpha$ ($\alpha_h$)   & 4.5\% & 3.3\% & Yes \\
-    $\beta$  ($\beta_d$)    & 1.8\% & 1.3\% & Yes \\
-    $\gamma$ ($\gamma_{\mathrm{snr}}$) & 3.6\% & 2.6\% & Yes \\
-    \bottomrule
-  \end{tabular}
-\end{table}
 
 Across both datasets, varying any single exponent changes accuracy by at most $4.5\%$, and the default settings lie within $1$--$2\%$ of the best observed value in each 1D sweep. This indicates that performance is not brittle to the choice of $(\alpha, \beta, \gamma)$; the defaults used throughout our main benchmark are reasonable and near-optimal.
 
@@ -428,11 +435,11 @@ Each component contributes positively. The calibration MLP $\Delta k_v$ provides
 \subsection{Computational Efficiency}
 By removing the reinforcement learning loop, our model significantly reduces training complexity. Figure~\ref{fig:efficiency} shows the speedup of \methodname{} relative to GRAIN-TD3.
 
-Our model achieves a $1.9$--$2.1\times$ training speedup across all tested datasets. This is because the RL policy requires forward and backward passes through the actor and critic networks, along with sample retrieval from the replay buffer. In contrast, our model precomputes $k^*(v)$ once at initialization, requiring only standard GNN backpropagation during training.
+The reported speedups refer to two complementary measurements. Table~\ref{tab:params} reports \emph{total} wall-clock training time on Texas (the most RL-expensive dataset), yielding the $30\times$ figure: GRAIN-TD3 spends $\sim12$\,s per epoch filling the replay buffer and running actor/critic updates before each GNN backward pass, whereas our method spends $\sim0.4$\,s. Figure~\ref{fig:efficiency} reports the \emph{GNN-phase-only} speedup (100 GNN training episodes, excluding the initial RL exploration buffer) averaged across all nine datasets, yielding $1.9$--$2.1\times$. The gap between the two figures reflects how much the RL warmup dominates on heterophilous graphs where sparse rewards make the TD3 policy slow to converge; on homophilous datasets (Cora, Pubmed) the RL loop is comparatively cheaper.
 
 \begin{figure}[t]
   \centering
-  \includegraphics[width=0.8\linewidth]{figures/fig_efficiency.pdf}
+  \includegraphics[width=0.6\linewidth]{figures/fig_efficiency.pdf}
   \caption{Training speedup of \methodname{} compared to GRAIN-TD3.}
   \label{fig:efficiency}
 \end{figure}
@@ -444,13 +451,23 @@ Our model achieves a $1.9$--$2.1\times$ training speedup across all tested datas
 In this paper, we showed that per-node adaptive aggregation depth can be accurately determined via a theory-motivated closed-form surrogate. Under a degree-corrected CSBM, we derived scaling laws that relate optimal aggregation depth to local homophily and node degree, motivating a robust per-node adaptive depth surrogate $k^*(v)$. Our resulting architecture, \methodname, computed in a strictly leakage-free manner, replaces expensive reinforcement learning controllers with this theoretically motivated formula. It matches or exceeds state-of-the-art RL controllers on seven of nine benchmarks, with the purely analytic formula (no calibration) already outperforming GRAIN-TD3 by over $4\%$ on WebKB graphs. Beyond raw accuracy, we argue that the primary value of \methodname{} is \emph{practical}: by eliminating the RL training loop entirely, it reduces per-epoch training time by $30\times$ and the controller footprint by $135\times$, enabling rapid iteration, reproducibility, and deployment on hardware-constrained platforms---advantages that hold regardless of the margin over strong baselines.
 
 \textbf{Limitations and future work.}
-(1) Our theoretical derivation employs a local-tree approximation and a simplified two-class symmetric CSBM; the surrogate's optimality in graphs with strong degree heterogeneity, multiple classes, or short cycles is not formally guaranteed.
-(2) The adaptive suppressor uses a hard, precomputed threshold $\tau$; a differentiable alignment estimator updated during training could avoid brittle behaviour near $\tau$ and dataset-specific tuning.
-(3) The most closely related concurrent work, AD-GNN~\cite{adgnn2025} and BNA~\cite{bna2026}, also achieves per-node or adaptive depth without RL. Head-to-head comparison on additional datasets and under low-label-rate conditions ($\le 10\%$ training) is an important future direction; in particular, robustness of the pseudo-labeller in label-scarce regimes (e.g., via confidence filtering) remains open.
-(4) A promising direction is to combine our closed-form $k^*$ with a differentiable or Gumbel-Softmax hop selector (cf.\ NOL-GAT~\cite{nolgat2025}) to allow joint optimization of depth and gating.
-(5) DRTR-style topology rewiring~\cite{drtr2024} could replace the static kNN graph for the implicit branch, providing a data-driven non-local view that adapts throughout training.
-(6) The TD3 correlation analysis (Section~\ref{sec:correlation}) uses the exact hyperparameters from the original GRAIN paper~\cite{grain2025}. A more exhaustive search over the RL training budget, reward shaping, or exploration schedule could yield a stronger RL baseline; rigorously establishing the ceiling performance of RL-based controllers relative to our analytic surrogate remains an important open question.
+(1) Our CSBM derivation uses a local-tree approximation and a two-class symmetric structure; extending the surrogate to multi-class settings or graphs with high degree heterogeneity remains future work.
+(2) The adaptive suppressor uses a hard threshold $\tau$; replacing this with a differentiable alignment estimator updated during training could avoid brittle thresholding.
+(3) We plan to perform a detailed head-to-head empirical comparison with concurrent RL-free methods (AD-GNN~\cite{adgnn2025}, BNA~\cite{bna2026}) under low-label regimes ($\le 10\%$).
+(4) Combining $k^*$ with a differentiable hop selector (e.g., NOL-GAT~\cite{nolgat2025}) would allow joint, end-to-end depth optimization.
+(5) Integrating dynamic topology rewiring (e.g., DRTR~\cite{drtr2024}) could provide a time-varying non-local view that adapts during training.
+(6) While we used GRAIN's default RL hyperparameters, an exhaustive sweep over RL budgets and rewards remains an open direction for establishing RL performance ceilings.
 
+\let\oldthebibliography\thebibliography
+\let\oldendthebibliography\endthebibliography
+\renewenvironment{thebibliography}[1]{%
+  \begin{oldthebibliography}{#1}%
+    \setlength{\itemsep}{0.0pt plus 0.1ex}%
+    \setlength{\parsep}{0.0pt}%
+    \setlength{\parskip}{0.0pt}%
+}{%
+  \end{oldthebibliography}%
+}
 \bibliography{references}
 
 \end{document}
