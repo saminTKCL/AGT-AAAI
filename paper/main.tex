@@ -41,14 +41,14 @@
 \newtheorem{definition}{Definition}
 \newtheorem{proposition}{Proposition}
 
-\title{Analytic Per-Node Aggregation Depth for Heterophilous Graph Neural Networks}
+\title{Theory-Motivated Per-Node Aggregation Depth for Heterophilous Graph Neural Networks}
 \author{Anonymous Authors}
 
 \begin{document}
 \maketitle
 
 \begin{abstract}
-Graph Neural Networks (GNNs) typically employ a uniform neighborhood aggregation depth across all nodes. In graphs characterized by heterophily—where connected nodes often belong to different classes—this uniform design causes severe performance degradation, either by importing neighborhood noise (oversmoothing) or failing to capture structural context. Recent efforts to customize aggregation depth per-node rely on expensive, black-box reinforcement learning (RL) controllers. In this paper, we show that per-node adaptive depth can be accurately approximated via a theory-motivated closed-form surrogate. Under a degree-corrected Contextual Stochastic Block Model (DC-CSBM), we analyze the local signal-to-noise ratio (SNR) of neighborhood features as a function of propagation depth, showing how the optimal depth scales with local homophily and degree. Based on these theoretical insights, we propose a robust, per-node adaptive depth surrogate that is computed in a strictly leakage-free manner at initialization. Leveraging this surrogate, we introduce \methodname, an RL-free architecture that replaces trial-and-error controllers with our theoretically motivated formula to compute the explicit neighborhood view. To capture distant, non-local signals, it combines this explicit view with an implicit semantic-similarity view via a lightweight learned gate. We further introduce an adaptive gate mechanism that dynamically suppresses the implicit view on graphs with low feature--label alignment. Across nine standard homophilous and heterophilous graph benchmarks, our method matches or exceeds state-of-the-art controllers while training up to $30\times$ faster per epoch and utilizing $135\times$ fewer controller parameters.
+Graph Neural Networks (GNNs) typically employ a uniform neighborhood aggregation depth across all nodes. In graphs characterized by heterophily---where connected nodes often belong to different classes---this uniform design causes performance degradation by importing cross-class noise (oversmoothing) or failing to capture structural context. Recent efforts to customize aggregation depth per-node rely on expensive reinforcement learning (RL) controllers. We propose \methodname, an RL-free architecture built around a leakage-free, theory-motivated per-node depth surrogate. Under a degree-corrected Contextual Stochastic Block Model (DC-CSBM), a local SNR analysis reveals a monotone design principle: optimal aggregation depth should increase with local homophily and node degree. This principle motivates a closed-form monotone surrogate $k^*(v)$ that is computed at initialization without accessing validation or test labels. The surrogate drives an explicit fractional-hop aggregation branch; an implicit kNN feature-similarity branch, gated by a small learned MLP and an alignment-based adaptive suppressor, captures long-range semantic signals on graphs where feature similarity tracks label similarity. Across nine benchmarks, \methodname{} is competitive with or outperforms the reproduced GRAIN-TD3 RL controller on 7 of 9 datasets, with up to $30\times$ reduction in controller-training overhead and approximately $2\times$ faster GNN-phase training, while using $135\times$ fewer controller parameters.
 \end{abstract}
 
 % ─────────────────────────────────────────────────────────────────────────────
@@ -59,9 +59,9 @@ Graph Neural Networks (GNNs) recursively aggregate neighborhood features (messag
 
 To resolve this, prior studies propose learning-based controllers to customize the aggregation depth per-node. Most notably, GRAIN~\cite{grain2025} frames depth selection as a continuous Markov Decision Process (MDP) and employs the Twin Delayed DDPG (TD3) reinforcement learning algorithm. Although effective, this introduces significant complexity: the RL policy requires auxiliary actor-critic networks, replay buffers, exploration schedules, and extensive meta-training. Moreover, the learned policy remains a black-box.
 
-In this work, we address these limitations by asking: \emph{Can per-node adaptive aggregation depth be derived analytically without reinforcement learning?} We show that the answer is yes. Under a degree-corrected Contextual Stochastic Block Model (DC-CSBM), neighborhood aggregation presents a local signal-to-noise ratio (SNR) trade-off, where the optimal depth scales monotonically with local homophily and degree. This analysis motivates our model, \methodname, which computes the explicit neighborhood view deterministically using a per-node depth surrogate $k^*(v)$. To prevent label leakage, local homophily is estimated using pseudo-labels from a base classifier. To capture long-range semantic signals, we combine this structural view with an implicit feature-similarity view via a lightweight learned gate $\beta_v$, and introduce an \textbf{adaptive gate} to dynamically suppress the implicit branch on graphs with low feature--label alignment.
+In this work, we ask: \emph{Can a simple, theory-motivated rule replace expensive RL controllers for per-node aggregation depth selection?} Under a degree-corrected Contextual Stochastic Block Model (DC-CSBM), a local SNR analysis reveals a monotone design principle---optimal aggregation depth should increase with local homophily and node degree. This principle motivates a practical per-node surrogate $k^*(v)$ that is computed at initialization without any learned parameters. To prevent label leakage, local homophily is estimated from pseudo-labels generated by a frozen feature-only classifier. To capture long-range semantic signals, we combine this structural view with an implicit feature-similarity branch gated by a small MLP, and introduce an \textbf{adaptive suppressor} that disables the implicit branch on graphs where feature similarity does not align with label similarity.
 
-We evaluate \methodname{} on nine benchmarks. Our method matches or exceeds state-of-the-art RL controllers on seven benchmarks, while reducing training times by up to $30\times$. A correlation analysis shows that our theoretically motivated $k^*(v)$ correlates strongly with local homophily ($r \ge 0.92$), whereas the learned TD3 actions show near-zero correlation ($r \approx 0$), indicating that RL fails to discover the structured relationship our surrogate provides by construction.
+We evaluate \methodname{} on nine benchmarks. The method is competitive with or outperforms the reproduced GRAIN-TD3 controller on 7 of 9 datasets, with up to $30\times$ reduction in controller-training overhead. A correlation analysis shows that $k^*(v)$ correlates strongly with local homophily ($r \ge 0.92$), whereas under the reproduced GRAIN-TD3 training protocol, TD3 actions show near-zero correlation ($r \approx 0$) with $k^*(v)$---suggesting that the RL policy did not converge to a structured, homophily-monotone depth assignment under the reproduced training budget.
 
 % ─────────────────────────────────────────────────────────────────────────────
 \section{Related Work}
@@ -75,14 +75,14 @@ Spectral GNNs (e.g., GPR-GNN~\cite{gprgnn2021}, BernNet~\cite{bernnet2021}) lear
 
 \subsection{Multi-Hop and Adaptive-Depth GNNs}
 Multi-hop architectures (e.g., APPNP~\cite{appnp2019}, GCNII~\cite{chen2020gcnii}, Ordered-GNN~\cite{orderedgnn2023}) extend neighborhood reach. However, they use fixed maximum depths or global mixing weights rather than node-specific hops.
-For per-node depth, AD-GNN~\cite{adgnn2025} learns node-specific recommendations, while NOL-GAT~\cite{nolgat2025} selects hop counts via Gumbel-Softmax. BNA~\cite{bna2026} uses a Bayesian prior over the effective hop scope. GRAIN~\cite{grain2025} uses TD3 RL to output continuous depths. In contrast, AGT-Implicit derives $k^*(v)$ from a closed-form CSBM analysis, making it deterministic, interpretable, and training-free.
-Our implicit kNN branch is related to topology rewiring (e.g., DRTR~\cite{drtr2024}), but we precompute the kNN graph once to avoid training overhead.
+For per-node depth, AD-GNN~\cite{adgnn2025} learns node-specific depth recommendations via a theoretical analysis, while NOL-GAT~\cite{nolgat2025} selects hop counts via Gumbel-Softmax. BNA~\cite{bna2026} uses a Bayesian prior over the effective hop scope. GRAIN~\cite{grain2025} uses TD3 RL to output continuous per-node depths. In contrast, AGT-Implicit derives $k^*(v)$ from a CSBM-motivated monotone surrogate computed analytically at initialization, requiring no learning or RL.
+Our implicit kNN branch is related to topology rewiring (e.g., DRTR~\cite{drtr2024}), but we precompute the kNN graph once to avoid additional training overhead.
 
 \subsection{Theoretical Analysis under CSBM}
-CSBM is a standard framework for GNN behavior analysis. Baranwal, Fountoulakis, and Jagannath~\cite{baranwal2022gcn, baranwal2023} analyzed GCN performance under CSBM, proving that convolutions reduce feature variance and showing how feature and graph SNRs dictate classification accuracy. We extend this by deriving a node-specific optimal aggregation depth under a degree-corrected CSBM.
+CSBM is a standard framework for GNN behavior analysis. Baranwal, Fountoulakis, and Jagannath~\cite{baranwal2022gcn, baranwal2023} analyzed GCN performance under CSBM, proving that convolutions reduce feature variance and showing how feature and graph SNRs dictate classification accuracy. We extend this line of work by motivating a node-specific monotone depth trend under a degree-corrected CSBM, from which we derive a practical surrogate.
 
 \subsection{Multi-View Graph Learning}
-To handle heterophily where direct neighbors offer no signal, multi-view approaches combine structural and feature-similarity views (e.g.,~\cite{klicpera2019diffusion}). While GRAIN~\cite{grain2025} uses RL to gate both views, we show that the structural depth is analytically solvable, leaving only the feature-similarity view's gate to be learned.
+To handle heterophily where direct neighbors offer no signal, multi-view approaches combine structural and feature-similarity views (e.g.,~\cite{klicpera2019diffusion}). While GRAIN~\cite{grain2025} uses RL to gate both views jointly, we show that the structural aggregation depth can be approximated by a theory-motivated monotone rule, leaving only the feature-similarity view's gate to be learned.
 
 % ─────────────────────────────────────────────────────────────────────────────
 \section{Preliminaries}
@@ -139,25 +139,29 @@ Combining these effects, the signal-to-noise ratio at node $v$ after $k$-hop agg
 
 \subsection{Unimodality and Depth Trade-off}
 Let $B(h_v) = b (2h_v - 1)^2$ represent the neighborhood-growth weighted homophily factor.
-\begin{proposition}[Aggregation Depth Scaling]
+
+\noindent\textbf{Assumptions.}\;
+The following derivation holds under: (i)~a binary, balanced CSBM with two equally-sized classes; (ii)~a local tree-like approximation (no short cycles, standard in GNN theory~\cite{baranwal2022gcn}); (iii)~approximately stable local homophily across hops; (iv)~approximately uniform random-walk spreading; and (v)~finite-graph saturation of neighborhood size at large $k$. These are standard analytical devices; the approximations are tightest on sparse graphs with low clustering coefficient.
+
+\begin{proposition}[SNR-Motivated Depth Trend under a Local CSBM Approximation]
 The behavior of $\mathrm{SNR}_k(v)$ exhibits a bifurcation based on $B(h_v)$:
 (i) if $B(h_v) > 1$ (high homophily), the neighborhood size grows faster than the signal decays, so $\mathrm{SNR}_k(v)$ increases with $k$ until graph saturation;
 (ii) if $B(h_v) < 1$ (heterophily), the cross-class noise accumulates faster than neighborhood averaging reduces variance, so $\mathrm{SNR}_k(v)$ decays immediately with $k$.
 Furthermore, because the graph is finite, neighborhood size saturates at $N_k(v) = n$ for large $k$. At saturation, noise variance stops shrinking while expected signal decays to 0. Hence, for high homophily, $\mathrm{SNR}_k(v)$ is unimodal, peaking at the saturation boundary, while for low homophily it is maximized at $k \le 1$.
 \end{proposition}
 
-This analysis demonstrates that the optimal neighborhood aggregation depth $k^*(v)$ is a monotonically increasing function of local homophily $h_v$ (high homophily allows deep aggregation without cross-class signal corruption) and local degree $d_v$ (high degree provides more immediate neighbors, reducing initial noise variance and allowing deeper search).
+This analysis suggests a \emph{monotone design principle}: the depth assigned to a node should increase with its local homophily $h_v$ and degree $d_v$. We do not claim that $k^*(v)$ below is the globally optimal depth on arbitrary graphs; rather, it is a practical surrogate motivated by the SNR bifurcation above.
 
 \subsection{Practical Monotone Surrogate}
-Since estimating continuous parameters such as $b$ and $\sigma^2$ globally is highly noisy and under-determined on real-world graphs, we parameterize these scaling laws into a stable per-node monotone surrogate:
+Motivated by the depth trend above, we define a practical per-node monotone surrogate:
 \begin{equation}
   \label{eq:kstar_surrogate}
   k^*(v) = k_{\min} + (k_{\max} - k_{\min}) \cdot \hat{h}_v^{\alpha} \cdot (1 + \beta \log(1 + d_v)) \cdot \snrv^{\gamma},
 \end{equation}
-where $\hat{h}_v$ is the leakage-free estimated local homophily (described below), and $\snrv$ is a feature-space SNR proxy. While the scaling exponents $(\alpha, \beta, \gamma)$ are fixed by cross-dataset grid search (Section~\ref{sec:sensitivity}), the functional form of Eq.~\eqref{eq:kstar_surrogate}---specifically the monotone dependence on $\hat{h}_v$, $d_v$, and $\snrv$---is directly motivated by the SNR bifurcation in Proposition~1. The default parameters are $k_{\min}=0.2,\, k_{\max}=5.0$, and scaling exponents $(\alpha, \beta, \gamma) = (1.5, 0.35, 0.25)$.
+where $\hat{h}_v$ is the leakage-free estimated local homophily (described below), and $\snrv$ is a feature-space SNR proxy. While the scaling exponents $(\alpha, \beta, \gamma)$ are fixed by cross-dataset grid search (Section~\ref{sec:sensitivity}), the functional form of Eq.~\eqref{eq:kstar_surrogate}---specifically the monotone dependence on $\hat{h}_v$, $d_v$, and $\snrv$---is directly motivated by the SNR trend in Proposition~1. The default parameters are $k_{\min}=0.2,\, k_{\max}=5.0$, and scaling exponents $(\alpha, \beta, \gamma) = (1.5, 0.35, 0.25)$. We emphasize that Eq.~\eqref{eq:kstar_surrogate} is a practical surrogate motivated by the SNR trend---it is not a closed-form solution to an optimization problem on arbitrary real-world graphs.
 
 \noindent\textbf{Component transparency.}\;
-We deliberately distinguish three tiers of the depth estimate. (i)~\textbf{Analytic core}: the functional form $\hat{h}_v^{\alpha}(1+\beta\log(1+d_v))\snrv^{\gamma}$ is prescribed by Proposition~1; it requires no gradient-based training. (ii)~\textbf{Observable inputs}: $\hat{h}_v$ is computed via a frozen pseudo-classifier (Section~\ref{sec:theory}); $d_v$ and $\snrv$ are closed-form graph statistics. None of these inputs receives gradients during the main GNN training. (iii)~\textbf{Optional calibration}: the residual $\Delta k_v$ is a lightweight 193-parameter MLP that absorbs local structure not captured by the formula. As the ablation in Section~\ref{sec:ablations} shows, omitting $\Delta k_v$ costs only $0.9\%$ while the purely analytic core still outperforms GRAIN-TD3 by over $4\%$ on WebKB graphs. The calibration is therefore a convenience, not a necessity.
+We deliberately distinguish three tiers of the depth estimate. (i)~\textbf{Analytic core}: the functional form $\hat{h}_v^{\alpha}(1+\beta\log(1+d_v))\snrv^{\gamma}$ is motivated by the SNR trend in Proposition~1; it requires no gradient-based training. (ii)~\textbf{Observable inputs}: $\hat{h}_v$ is computed via a frozen pseudo-classifier (Section~\ref{sec:theory}); $d_v$ and $\snrv$ are closed-form graph statistics. None of these inputs receives gradients during the main GNN training. (iii)~\textbf{Optional calibration}: the residual $\Delta k_v$ is a lightweight 193-parameter MLP that absorbs local structure not captured by the formula. As the ablation in Section~\ref{sec:ablations} shows, omitting $\Delta k_v$ costs only $0.9\%$ while the purely analytic core still outperforms GRAIN-TD3 by over $4\%$ on WebKB graphs. The calibration is therefore a convenience, not a necessity.
 
 \noindent\textbf{Connection to branching factor $b$.}\;
 The branching factor $b$ in $B(h_v)=b(2h_v-1)^2$ governs how quickly the $k$-hop neighborhood expands and, together with $(2h_v-1)^2$, determines whether $\mathrm{SNR}_k(v)$ increases or decreases with depth. Since $b$ is not directly observable from local statistics without full neighborhood enumeration, the surrogate replaces $b^{k-1}$ with a monotone degree proxy. We use $\log(1+d_v)$ because degree is a first-order indicator of local branching---high-degree nodes expand into more neighbors per hop---and the logarithm compresses large-degree outliers, stabilizing the surrogate across sparse and dense graphs. This substitution preserves the theory's key prediction (deeper aggregation for high-degree, high-homophily nodes) while remaining directly estimable from local graph statistics.
@@ -208,15 +212,15 @@ where $\sigma(\cdot)$ is the sigmoid function.
 \subsection{Adaptive Suppressor}
 The implicit branch assumes that feature similarity correlates with label similarity. However, on certain graphs (e.g., Chameleon and Squirrel), nodes can be highly similar in feature space but belong to different classes. In such settings, aggregating kNN features imports noise.
 
-We define the graph's \emph{kNN alignment} $a_G$ as:
+To detect this mismatch in a leakage-free manner, we define the \emph{training-set kNN alignment} $a_G^{\mathrm{train}}$ using only training labels:
 \begin{equation}
-  a_G = \frac{1}{n} \sum_{v \in V} \frac{1}{K} \sum_{u \in \mathrm{kNN}(v)} \mathbf{1}[y_u = y_v].
+  a_G^{\mathrm{train}} = \frac{1}{|V_{\mathrm{train}}|} \sum_{v \in V_{\mathrm{train}}} \frac{1}{K} \sum_{u \in \mathrm{kNN}(v) \cap V_{\mathrm{train}}} \mathbf{1}[y_u = y_v].
 \end{equation}
-Using a threshold $\tau = 0.35$, we compute a graph-wide suppression coefficient:
+Validation and test labels are never accessed. Using a threshold $\tau = 0.35$, we compute a graph-wide suppression coefficient:
 \begin{equation}
-  w_{\mathrm{align}} = \max\left(0, \frac{a_G - \tau}{1 - \tau}\right).
+  w_{\mathrm{align}} = \max\left(0, \frac{a_G^{\mathrm{train}} - \tau}{1 - \tau}\right).
 \end{equation}
-If the feature--label alignment is low ($a_G < 0.35$), $w_{\mathrm{align}}$ drops to 0, completely disabling the implicit branch. This alignment coefficient is precomputed once at initialization using the training labels.
+If $a_G^{\mathrm{train}} < 0.35$, $w_{\mathrm{align}}$ drops to 0, completely disabling the implicit branch.
 
 \subsection{Multi-View Combination and Training}
 The final representation $\mathbf{h}_v$ is the gated sum of the two views:
@@ -240,7 +244,7 @@ We evaluate our method on nine standard node classification datasets: WebKB (Tex
 We reproduce the GRAIN-TD3 baseline using the original parameters~\cite{grain2025}: 2-layer actor and twin-critic networks (width 128), Adam learning rate $10^{-4}$, replay buffer 5{,}000, batch size 128, discount $\gamma=0.99$, soft update $\tau=0.005$, and policy noise $\sigma=0.3$ (clipped at $0.5$). We match the original episode budget and exploration schedule verbatim.
 
 \noindent\textbf{Baseline scope.}\;
-We compare against direct message-passing peers for per-node adaptive depth, using MLP as a structure-agnostic baseline. Non-message-passing methods (e.g., LINKX~\cite{linkx2021}) operate via feature concatenation or label propagation and are discussed in related work.
+We compare against direct message-passing peers for per-node adaptive depth, using MLP as a structure-agnostic baseline. Methods like LINKX~\cite{linkx2021} operate via feature concatenation or label propagation and use fundamentally different architectural primitives; their published numbers are not directly comparable in the adaptive-depth setting, so they appear in related work rather than Table~\ref{tab:main_results}.
 
 \begin{table*}[t]
   \centering
@@ -354,21 +358,21 @@ To investigate the validity of our analytical formulation, we compute the Pearso
   \label{fig:correlation}
 \end{figure*}
 
-As shown in Figure~\ref{fig:theory_kstar}, the Pearson correlation between $k^*(v)$ and local homophily $h_v$ exceeds $0.92$ across all tested datasets. This confirms that our formula correctly forces deeper aggregation for homophilous nodes and shallow aggregation for heterophilous nodes.
+As shown in Figure~\ref{fig:theory_kstar}, the Pearson correlation between $k^*(v)$ and local homophily $h_v$ exceeds $0.92$ across all tested datasets. This suggests that our surrogate correctly trends toward deeper aggregation for nodes with higher local homophily, consistent with the design principle from Proposition~1.
 
-Conversely, we analyze the actions generated by the TD3 policy from GRAIN. Figure~\ref{fig:theory_td3} shows that the correlation between the TD3 actions and $k^*(v)$ is nearly zero ($r \approx 0$). In fact, the TD3 actions are highly clustered and uniform across all nodes. This indicates that, under the standard training hyperparameters reported in the original GRAIN paper~\cite{grain2025}, the TD3 policy shows limited per-node adaptation, converging toward a near-uniform action distribution rather than a structured node-specific policy. We note that a more exhaustive RL hyperparameter search could potentially strengthen the TD3 baseline---we discuss this explicitly as a limitation (Section~\ref{sec:conclusion}). Nevertheless, our analytic surrogate guarantees structured, monotone granularity by construction, a property that the RL policy must \emph{discover} via trial and error under a fixed training budget.
+We also analyze the actions generated by the TD3 policy from GRAIN under the reproduced training protocol. Figure~\ref{fig:theory_td3} shows that the correlation between the TD3 actions and $k^*(v)$ is nearly zero ($r \approx 0$), and the TD3 actions are highly clustered and near-uniform across nodes. This indicates that, under the standard training hyperparameters from the original GRAIN paper~\cite{grain2025}, the TD3 policy did not converge to a structured, homophily-monotone depth assignment---converging instead toward near-uniform actions. We do not claim $k^*(v)$ is the uniquely correct target; a more exhaustive RL hyperparameter search might enable TD3 to discover a different structured policy. Nevertheless, our surrogate guarantees monotone, homophily-driven depth assignment by construction, a property that the RL policy must discover via trial and error under a fixed training budget.
 
 \subsection{Adaptive Gate Analysis}
 To understand the performance of our adaptive suppressor, we list the kNN feature--label alignment values in Table~\ref{tab:knn_alignment}.
 
 \begin{table}[h]
   \centering
-  \caption{Graph properties and kNN feature--label alignment ($a_G$). Bold values indicate datasets where the adaptive gate suppresses the implicit branch ($a_G < 0.35$).}
+  \caption{Graph properties and training-set kNN alignment ($a_G^{\mathrm{train}}$). Bold values indicate datasets where the adaptive suppressor disables the implicit branch ($a_G^{\mathrm{train}} < 0.35$).}
   \label{tab:knn_alignment}
   \footnotesize
   \begin{tabular}{lccc}
     \toprule
-    Dataset & Homophily & kNN Align ($a_G$) & Suppressed \\
+    Dataset & Homophily & $a_G^{\mathrm{train}}$ & Suppressed \\
     \midrule
     Texas & 0.54 & 0.63 & No \\
     Wisconsin & 0.57 & 0.69 & No \\
@@ -379,13 +383,13 @@ To understand the performance of our adaptive suppressor, we list the kNN featur
   \end{tabular}
 \end{table}
 
-Chameleon ($0.28$) and Squirrel ($0.23$) both fall below the threshold $\tau = 0.35$. On these graphs, feature-similar neighbors do not share the same label, which explains why the non-adaptive implicit model performs poorly. By applying the adaptive gate (\ours), the implicit branch is disabled, recovering accuracy on Chameleon from $57.3\%$ to $59.5\%$, and on Squirrel from $42.5\%$ to $43.4\%$.
+Chameleon ($a_G^{\mathrm{train}} = 0.28$) and Squirrel ($a_G^{\mathrm{train}} = 0.23$) both fall below the threshold $\tau = 0.35$. On these graphs, feature-similar neighbors do not share the same label, so enabling the implicit branch imports noise.
 
 \textbf{Sensitivity to $\tau$ and $K$.}
-We sweep $\tau \in \{0.25, 0.30, 0.35, 0.40, 0.45\}$ and $K \in \{5, 10, 15, 20\}$ and report mean test accuracy over the nine benchmarks. Results are stable within $\pm 0.4\%$ over these ranges. The transition from Chameleon/Squirrel being suppressed to unsuppressed occurs at $\tau \approx 0.30$, with $\tau = 0.35$ providing a comfortable margin. Increasing $K$ beyond 10 yields no measurable benefit but increases the precomputation cost. We therefore fix $\tau = 0.35$, $K = 10$ as defaults. The value $\tau = 0.35$ is further motivated by the bimodal distribution of observed alignment scores: datasets cluster into a high-alignment regime ($a_G > 0.50$) and a low-alignment regime ($a_G < 0.30$), with a natural gap between $0.28$ (Chameleon) and $0.55$ (Cora). Crucially, any $\tau \in (0.28, 0.55)$ produces \emph{identical} binary suppression decisions across all nine evaluated datasets; $\tau = 0.35$ is one representative value within this 0.27-wide plateau, making the choice robust rather than brittle.
+We sweep $\tau \in \{0.25, 0.30, 0.35, 0.40, 0.45\}$ and $K \in \{5, 10, 15, 20\}$ and report mean test accuracy over the nine benchmarks. Results are stable within $\pm 0.4\%$ over these ranges. The transition from Chameleon/Squirrel being suppressed to unsuppressed occurs at $\tau \approx 0.30$, with $\tau = 0.35$ providing a comfortable margin. We fix $\tau = 0.35$, $K = 10$ as defaults; the choice is robust since any $\tau \in (0.28, 0.55)$ produces identical suppression decisions across all nine evaluated datasets.
 
 \textbf{Alignment computed on training labels only.}
-$a_G$ is computed using only the training-mask labels: we restrict both the prediction and neighborhood lookup to $V_{\mathrm{train}}$ when counting same-label pairs in $\mathrm{kNN}(v)$. This mirrors the leakage-free protocol used for $\hat{h}_v$.
+$a_G^{\mathrm{train}}$ is computed using only the training-mask labels: we restrict both the prediction and neighborhood lookup to $V_{\mathrm{train}}$ when counting same-label pairs in $\mathrm{kNN}(v)$. Validation and test labels are never accessed.
 
 \subsection{Leakage Audit}
 \label{sec:leakage}
@@ -397,7 +401,7 @@ The surprising Texas result ($\Delta = +5.4\%$ in favour of pseudo-homophily ove
 
 \subsection{Hyperparameter Sensitivity}
 \label{sec:sensitivity}
-We sweep each exponent in Eq.~(4) independently on Texas and Wisconsin (3 seeds each), holding the other two parameters at their defaults $(\alpha, \beta, \gamma) = (1.5, 0.35, 0.25)$. Table~\ref{tab:sensitivity} summarizes the accuracy range per parameter.
+We sweep each exponent in Eq.~\eqref{eq:kstar_surrogate} independently on Texas and Wisconsin (3 seeds each), holding the other two parameters at their defaults $(\alpha, \beta, \gamma) = (1.5, 0.35, 0.25)$. Table~\ref{tab:sensitivity} summarizes the accuracy range per parameter.
 
 Across both datasets, varying any single exponent changes accuracy by at most $4.5\%$, and the default settings lie within $1$--$2\%$ of the best observed value in each 1D sweep. This indicates that performance is not brittle to the choice of $(\alpha, \beta, \gamma)$; the defaults used throughout our main benchmark are reasonable and near-optimal.
 
@@ -441,13 +445,14 @@ Figure~\ref{fig:efficiency} shows the training speedup of \methodname{} vs.\ GRA
 \section{Conclusion and Limitations}
 \label{sec:conclusion}
 
-We showed that per-node adaptive aggregation depth can be accurately determined via a theory-motivated closed-form surrogate derived under a degree-corrected CSBM. Our architecture, \methodname, is computed in a strictly leakage-free manner and replaces expensive RL controllers with this analytic formula. It matches or exceeds state-of-the-art RL controllers on seven of nine benchmarks while reducing training time by $30\times$ and controller parameters by $135\times$.
+We propose \methodname, an RL-free architecture for per-node adaptive aggregation depth in heterophilous GNNs. Starting from a local SNR analysis under a degree-corrected CSBM, we derive a monotone design principle motivating a leakage-free per-node depth surrogate $k^*(v)$. The surrogate is computed at initialization---without RL, without accessing held-out labels---and drives a fractional-hop explicit branch combined with an alignment-gated implicit kNN branch. Across nine benchmarks, \methodname{} is competitive with or outperforms the reproduced GRAIN-TD3 RL controller on 7 of 9 datasets, with up to $30\times$ reduction in controller-training overhead and $135\times$ fewer controller parameters.
 
 \textbf{Limitations.}
-(1) Our CSBM derivation uses a local-tree, two-class approximation; multi-class and high-degree-heterogeneity graphs remain future work.
-(2) The hard alignment threshold $\tau$ could be replaced with a differentiable estimator.
-(3) Head-to-head comparisons with concurrent RL-free methods (AD-GNN~\cite{adgnn2025}, BNA~\cite{bna2026}) under low-label regimes ($\le 10\%$) are planned.
-(4) Combining $k^*$ with a differentiable hop selector (e.g., NOL-GAT~\cite{nolgat2025}) or dynamic topology rewiring (e.g., DRTR~\cite{drtr2024}) could further improve performance.
+(1) The CSBM derivation uses a local-tree, two-class approximation; the analysis is a motivating heuristic, not a rigorous optimality proof on arbitrary graphs. Multi-class and high-degree-heterogeneity settings are important future directions.
+(2) Pseudo-label quality depends on training-set size; performance under very low label rates ($\le 5$ labels/class) remains unvalidated and is an important future direction.
+(3) The hard alignment threshold $\tau$ may be suboptimal for datasets with intermediate alignment ($a_G^{\mathrm{train}} \approx 0.35$); a differentiable estimator updated during training could improve robustness.
+(4) Head-to-head comparisons with concurrent RL-free methods (AD-GNN~\cite{adgnn2025}, BNA~\cite{bna2026}) under low-label regimes are planned.
+(5) A broader baseline comparison including LINKX~\cite{linkx2021}, FSGNN, and GBK-GNN is needed for a complete picture; their exclusion from Table~\ref{tab:main_results} reflects architectural orthogonality to the adaptive-depth setting.
 
 \let\oldthebibliography\thebibliography
 \let\oldendthebibliography\endthebibliography
