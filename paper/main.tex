@@ -178,7 +178,7 @@ A high value indicates that $v$ sits in a dense feature cluster, which we interp
 
 \begin{figure}[t]
   \centering
-  \includegraphics[width=0.9\linewidth]{figures/fig_architecture.pdf}
+  \includegraphics[width=\linewidth]{figures/fig_architecture.pdf}
   \caption{%
     \textbf{AGT-Implicit Architecture.} The explicit branch uses our analytic formula $k^*(v)$ to compute the neighborhood aggregation depth. The implicit branch performs a kNN search in feature space, gated by a learned weight $\beta_v$ and guarded by our adaptive suppressor.
   }
@@ -248,6 +248,7 @@ We compare against direct message-passing peers for per-node adaptive depth, usi
   \label{tab:main_results}
   \footnotesize
   \setlength{\tabcolsep}{3.0pt}
+  \resizebox{\linewidth}{!}{%
   \begin{tabular}{lccccccccccc}
     \toprule
     Dataset & MLP & GCN & H2GCN & GPR-GNN & FAGCN & ACM-GNN & GloGNN & Ordered-GNN & GRAIN-TD3 & AGT & \methodname \\
@@ -262,7 +263,7 @@ We compare against direct message-passing peers for per-node adaptive depth, usi
     Citeseer & 73.3{\tiny$\pm$2.0} & 76.3{\tiny$\pm$1.7} & 76.6{\tiny$\pm$1.6} & 76.1{\tiny$\pm$1.6} & 76.7{\tiny$\pm$1.6} & 73.8{\tiny$\pm$1.5} & 76.3{\tiny$\pm$1.5} & 75.8{\tiny$\pm$1.7} & 77.6{\tiny$\pm$1.8} & 78.7{\tiny$\pm$1.8} & \underline{\textbf{79.2}}{\tiny$\pm$1.6} \\
     Pubmed & 87.5{\tiny$\pm$0.3} & 88.5{\tiny$\pm$0.6} & 88.6{\tiny$\pm$0.5} & 88.8{\tiny$\pm$0.4} & 88.0{\tiny$\pm$0.5} & 87.5{\tiny$\pm$0.3} & 87.7{\tiny$\pm$0.4} & 87.9{\tiny$\pm$0.4} & 88.3{\tiny$\pm$0.6} & 89.4{\tiny$\pm$0.5} & \underline{\textbf{89.6}}{\tiny$\pm$0.3} \\
     \bottomrule
-  \end{tabular}
+  \end{tabular}}
 \end{table*}
 
 \subsection{Parameter and Runtime Efficiency}
@@ -338,14 +339,14 @@ To investigate the validity of our analytical formulation, we compute the Pearso
   \centering
   \begin{subfigure}{0.48\textwidth}
     \centering
-    \includegraphics[width=0.7\linewidth]{figures/fig_kstar_homophily.pdf}
+    \includegraphics[width=0.88\linewidth]{figures/fig_kstar_homophily.pdf}
     \caption{Correlation between $k^*$ and local homophily $h_v$.}
     \label{fig:theory_kstar}
   \end{subfigure}
   \hfill
   \begin{subfigure}{0.48\textwidth}
     \centering
-    \includegraphics[width=0.7\linewidth]{figures/fig_td3_vs_kstar.pdf}
+    \includegraphics[width=0.88\linewidth]{figures/fig_td3_vs_kstar.pdf}
     \caption{Correlation between TD3 actions and $k^*$.}
     \label{fig:theory_td3}
   \end{subfigure}
@@ -431,7 +432,7 @@ Figure~\ref{fig:efficiency} shows the training speedup of \methodname{} vs.\ GRA
 
 \begin{figure}[t]
   \centering
-  \includegraphics[width=0.6\linewidth]{figures/fig_efficiency.pdf}
+  \includegraphics[width=0.78\linewidth]{figures/fig_efficiency.pdf}
   \caption{Training speedup of \methodname{} compared to GRAIN-TD3.}
   \label{fig:efficiency}
 \end{figure}
